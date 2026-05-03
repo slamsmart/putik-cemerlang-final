@@ -15,7 +15,6 @@ export async function uploadToCloudinary(
       .upload_stream(
         {
           folder: "putik-cemerlang/sliders",
-          public_id: `slider_${Date.now()}`,
           overwrite: true,
           transformation: [{ width: 1920, height: 1080, crop: "limit", quality: "auto:good", fetch_format: "auto" }],
         },

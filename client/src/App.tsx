@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
+
 import NotFound from "@/pages/not-found";
 
 import LandingPage from "@/pages/LandingPage";
@@ -13,7 +14,8 @@ import ArsipSuratPage from "@/pages/ArsipSuratPage";
 import KontenSliderPage from "@/pages/KontenSliderPage";
 import PengaturanPage from "@/pages/PengaturanPage";
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
+const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || "https://mellow-gerbil-927.convex.cloud";
+const convex = new ConvexReactClient(CONVEX_URL);
 
 function Router() {
   return (
