@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery as useConvexQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Slider } from "@shared/schema";
 
 const AUTOPLAY_MS = 5000;
 
@@ -22,9 +23,21 @@ const variants = {
   }),
 };
 
-const fallbackSliders: Slider[] = [
+type ConvexSlider = {
+  _id: Id<"sliders">;
+  title: string;
+  subtitle: string;
+  ctaText: string;
+  ctaLink: string;
+  imageUrl: string;
+  displayOrder: number;
+  isActive: boolean;
+};
+
+// Static fallback shown while Convex loads or if DB is empty
+const fallbackSliders: ConvexSlider[] = [
   {
-    id: "slider-1",
+    _id: "slider-1" as Id<"sliders">,
     title: "Pelayanan Informasi Maritim Terpadu",
     subtitle: "Akses data kelautan dan perikanan Kabupaten Malang secara transparan dan akuntabel.",
     ctaText: "Pelajari Selengkapnya",
@@ -34,7 +47,7 @@ const fallbackSliders: Slider[] = [
     isActive: true,
   },
   {
-    id: "slider-2",
+    _id: "slider-2" as Id<"sliders">,
     title: "Modernisasi Sektor Perikanan",
     subtitle: "Mendukung nelayan lokal dengan teknologi dan informasi data laut terkini.",
     ctaText: "Lihat Program",
@@ -46,9 +59,15 @@ const fallbackSliders: Slider[] = [
 ];
 
 export function HeroSlider() {
-  const { data: apiSliders } = useQuery<Slider[]>({ queryKey: ["/api/sliders"] });
+  // ✅ Real-time Convex — updates instantly when admin edits, persists on refresh
+  const convexSliders = useConvexQuery(api.sliders.list);
 
-  const sliders = (apiSliders ?? fallbackSliders).filter((s) => s.isActive);
+  const sliders = (
+    convexSliders && convexSliders.length > 0
+      ? (convexSliders as ConvexSlider[])
+      : fallbackSliders
+  ).filter((s) => s.isActive);
+
   const [[current, direction], setPage] = useState([0, 0]);
 
   const paginate = useCallback(
@@ -68,11 +87,11 @@ export function HeroSlider() {
   const slide = sliders[current % sliders.length];
 
   return (
-    <section className="relative h-[580px] overflow-hidden bg-[#001e40]">
+    <section className="relative h-[420px] sm:h-[500px] md:h-[580px] overflow-hidden bg-[#001e40]">
       {/* Slides */}
       <AnimatePresence initial={false} custom={direction} mode="popLayout">
         <motion.div
-          key={slide.id}
+          key={slide._id}
           custom={direction}
           variants={variants}
           initial="enter"
@@ -90,12 +109,12 @@ export function HeroSlider() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#001e40]/90 via-[#001e40]/60 to-transparent" />
 
           {/* Content */}
-          <div className="relative flex h-full flex-col justify-center px-16 pb-20">
+          <div className="relative flex h-full flex-col justify-center px-6 sm:px-12 md:px-16 pb-16 sm:pb-20">
             <motion.span
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15, duration: 0.5 }}
-              className="mb-4 inline-block w-fit rounded-full bg-[#c6e7ff]/20 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-[#c6e7ff]"
+              className="mb-3 sm:mb-4 inline-block w-fit rounded-full bg-[#c6e7ff]/20 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-[#c6e7ff]"
             >
               Kabupaten Malang
             </motion.span>
@@ -104,7 +123,7 @@ export function HeroSlider() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.55 }}
-              className="mb-5 max-w-2xl text-4xl font-bold leading-tight text-white md:text-5xl"
+              className="mb-3 sm:mb-5 max-w-2xl text-2xl sm:text-3xl md:text-5xl font-bold leading-tight text-white"
             >
               {slide.title}
             </motion.h1>
@@ -113,7 +132,7 @@ export function HeroSlider() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35, duration: 0.55 }}
-              className="mb-8 max-w-xl text-base leading-relaxed text-slate-300"
+              className="mb-6 sm:mb-8 max-w-xl text-sm sm:text-base leading-relaxed text-slate-300"
             >
               {slide.subtitle}
             </motion.p>
@@ -127,7 +146,7 @@ export function HeroSlider() {
               {slide.ctaText && (
                 <a
                   href={slide.ctaLink || "#"}
-                  className="rounded-lg bg-white px-8 py-3 text-sm font-semibold text-[#001e40] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  className="rounded-lg bg-white px-6 sm:px-8 py-2.5 sm:py-3 text-sm font-semibold text-[#001e40] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
                   {slide.ctaText}
                 </a>
@@ -137,29 +156,33 @@ export function HeroSlider() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Prev / Next arrows */}
+      {/* Prev / Next arrows — hidden on small screens */}
       {sliders.length > 1 && (
         <>
           <button
             aria-label="Slide sebelumnya"
             onClick={() => paginate(-1)}
-            className="absolute left-5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/15 p-2.5 text-white backdrop-blur-sm transition-colors hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="hidden sm:flex absolute left-4 sm:left-5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/15 p-2.5 text-white backdrop-blur-sm transition-colors hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
           </button>
           <button
             aria-label="Slide berikutnya"
             onClick={() => paginate(1)}
-            className="absolute right-5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/15 p-2.5 text-white backdrop-blur-sm transition-colors hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="hidden sm:flex absolute right-4 sm:right-5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/15 p-2.5 text-white backdrop-blur-sm transition-colors hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
           </button>
         </>
       )}
 
       {/* Dot indicators */}
       {sliders.length > 1 && (
-        <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-2">
+        <div className="absolute bottom-5 sm:bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-2">
           {sliders.map((_, i) => (
             <button
               key={i}

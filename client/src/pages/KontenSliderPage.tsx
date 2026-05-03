@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Badge } from "@/components/ui/badge";
@@ -10,13 +10,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Slider } from "@shared/schema";
+
+// Convex slider doc type (has _id instead of id)
+type ConvexSlider = {
+  _id: Id<"sliders">;
+  _creationTime: number;
+  title: string;
+  subtitle: string;
+  ctaText: string;
+  ctaLink: string;
+  imageUrl: string;
+  displayOrder: number;
+  isActive: boolean;
+};
 
 interface SliderCardProps {
-  slider: Slider;
-  onDelete: (id: string) => void;
-  onUpdate: (id: string, data: Partial<Slider>) => void;
+  slider: ConvexSlider;
+  onDelete: (id: Id<"sliders">) => void;
+  onUpdate: (id: Id<"sliders">, data: Partial<Omit<ConvexSlider, "_id" | "_creationTime">>) => void;
 }
 
 function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
@@ -30,7 +41,8 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
   const { toast } = useToast();
 
   const handleSave = () => {
-    onUpdate(slider.id, { title, subtitle, ctaText, ctaLink, imageUrl });
+    onUpdate(slider._id, { title, subtitle, ctaText, ctaLink, imageUrl });
+    toast({ title: "Slider berhasil disimpan" });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,8 +56,10 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       setImageUrl(data.url);
+      // Auto-save to Convex immediately after upload
+      onUpdate(slider._id, { imageUrl: data.url });
       if (data.note) toast({ title: "Info", description: data.note });
-      else toast({ title: "Gambar berhasil diunggah" });
+      else toast({ title: "Gambar berhasil diunggah & disimpan" });
     } catch (err: any) {
       toast({ title: "Upload gagal", description: err.message, variant: "destructive" });
     } finally {
@@ -56,11 +70,11 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
 
   return (
     <div
-      data-testid={`card-slider-${slider.id}`}
-      className="flex items-start gap-6 rounded-lg border border-slate-200 bg-white p-4"
+      data-testid={`card-slider-${slider._id}`}
+      className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 rounded-lg border border-slate-200 bg-white p-4"
     >
       {/* Image preview */}
-      <div className="relative h-32 w-48 shrink-0 overflow-hidden rounded-md bg-slate-100">
+      <div className="relative h-32 w-full sm:w-48 shrink-0 overflow-hidden rounded-md bg-slate-100">
         {imageUrl ? (
           <img src={imageUrl} alt="Slider" className="h-full w-full object-cover" />
         ) : (
@@ -76,7 +90,7 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
           onChange={handleImageUpload}
         />
         <button
-          data-testid={`button-upload-image-${slider.id}`}
+          data-testid={`button-upload-image-${slider._id}`}
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
           className="absolute bottom-1.5 right-1.5 rounded bg-[#001e40]/80 px-2 py-1 text-[10px] font-medium text-white transition-colors hover:bg-[#001e40] disabled:opacity-60"
@@ -86,21 +100,19 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
       </div>
 
       {/* Fields */}
-      <div className="flex flex-1 flex-col gap-3">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2 flex flex-col gap-1">
+      <div className="flex flex-1 flex-col gap-3 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="col-span-full flex flex-col gap-1">
             <label className="text-xs text-[#5f5e5e]">Headline Utama</label>
             <Input
-              data-testid={`input-headline-${slider.id}`}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="border-slate-200 text-sm text-[#191c1e]"
             />
           </div>
-          <div className="col-span-2 flex flex-col gap-1">
+          <div className="col-span-full flex flex-col gap-1">
             <label className="text-xs text-[#5f5e5e]">Sub-headline</label>
             <Textarea
-              data-testid={`input-subheadline-${slider.id}`}
               value={subtitle}
               onChange={(e) => setSubtitle(e.target.value)}
               className="min-h-[72px] resize-none border-slate-200 text-sm text-[#191c1e]"
@@ -109,7 +121,6 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
           <div className="flex flex-col gap-1">
             <label className="text-xs text-[#5f5e5e]">Teks Tombol (CTA)</label>
             <Input
-              data-testid={`input-cta-${slider.id}`}
               value={ctaText}
               onChange={(e) => setCtaText(e.target.value)}
               className="border-slate-200 text-sm text-[#191c1e]"
@@ -118,7 +129,6 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
           <div className="flex flex-col gap-1">
             <label className="text-xs text-[#5f5e5e]">Link Tujuan</label>
             <Input
-              data-testid={`input-link-${slider.id}`}
               value={ctaLink}
               onChange={(e) => setCtaLink(e.target.value)}
               className="border-slate-200 text-sm text-[#191c1e]"
@@ -127,7 +137,6 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
         </div>
         <div className="flex items-center justify-between pt-1">
           <Button
-            data-testid={`button-simpan-slider-${slider.id}`}
             onClick={handleSave}
             size="sm"
             className="rounded bg-[#001e40] px-4 text-xs text-white hover:bg-[#001e40]/90"
@@ -135,14 +144,12 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
             Simpan
           </Button>
           <Button
-            data-testid={`button-hapus-slider-${slider.id}`}
             variant="ghost"
             size="sm"
-            onClick={() => onDelete(slider.id)}
+            onClick={() => onDelete(slider._id)}
             className="gap-1 p-0 text-[#ba1a1a] hover:bg-transparent hover:text-[#ba1a1a]"
           >
-            <img src="/figmaAssets/container-1.svg" alt="" className="shrink-0" />
-            <span className="text-sm">Hapus</span>
+            <span className="text-sm">🗑 Hapus</span>
           </Button>
         </div>
       </div>
@@ -153,52 +160,53 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
 export default function KontenSliderPage() {
   const { toast } = useToast();
 
-  const { data: sliders = [], isLoading } = useQuery<Slider[]>({
-    queryKey: ["/api/sliders"],
-  });
+  // ✅ Convex real-time query — persists on refresh
+  const sliders = useConvexQuery(api.sliders.list) ?? [];
+  const isLoading = sliders === undefined;
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Slider> }) =>
-      apiRequest("PUT", `/api/sliders/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sliders"] });
-      toast({ title: "Slider berhasil disimpan" });
-    },
-    onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
-  });
+  const createSlider = useConvexMutation(api.sliders.create);
+  const updateSlider = useConvexMutation(api.sliders.update);
+  const deleteSlider = useConvexMutation(api.sliders.remove);
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/sliders/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sliders"] });
-      toast({ title: "Slider dihapus" });
-    },
-    onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
-  });
-
-  const createMutation = useMutation({
-    mutationFn: () =>
-      apiRequest("POST", "/api/sliders", {
+  const handleCreate = async () => {
+    try {
+      await createSlider({
         title: "Judul Banner Baru",
-        subtitle: "Deskripsi banner baru.",
+        subtitle: "Deskripsi banner baru. Klik Edit untuk mengubah.",
         ctaText: "Selengkapnya",
         ctaLink: "/",
         imageUrl: "",
-        displayOrder: sliders.length,
+        displayOrder: (sliders as ConvexSlider[]).length,
         isActive: true,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sliders"] });
+      });
       toast({ title: "Slider baru ditambahkan" });
-    },
-    onError: () => toast({ title: "Gagal menambah", variant: "destructive" }),
-  });
+    } catch {
+      toast({ title: "Gagal menambah slider", variant: "destructive" });
+    }
+  };
 
-  const activeCount = sliders.filter((s) => s.isActive).length;
+  const handleUpdate = async (id: Id<"sliders">, data: Partial<Omit<ConvexSlider, "_id" | "_creationTime">>) => {
+    try {
+      await updateSlider({ id, ...data });
+    } catch {
+      toast({ title: "Gagal menyimpan", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (id: Id<"sliders">) => {
+    try {
+      await deleteSlider({ id });
+      toast({ title: "Slider dihapus" });
+    } catch {
+      toast({ title: "Gagal menghapus", variant: "destructive" });
+    }
+  };
+
+  const activeCount = (sliders as ConvexSlider[]).filter((s) => s.isActive).length;
 
   return (
     <AdminLayout>
-      <header className="mb-10 flex items-end justify-between">
+      <header className="mb-6 sm:mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-base font-normal text-[#001e40] [font-family:'Public_Sans',Helvetica]">
             Konten &amp; Slider
@@ -207,19 +215,15 @@ export default function KontenSliderPage() {
             Kelola visual utama dan metadata informasi situs Putik Cemerlang.
           </p>
         </div>
-        <Button
-          data-testid="button-simpan-perubahan"
-          className="h-auto rounded-lg bg-[#001e40] px-10 py-2.5 shadow-[0px_1px_2px_#0000000d] hover:bg-[#001e40]/90 [font-family:'Public_Sans',Helvetica] text-sm text-white"
-        >
-          <img src="/figmaAssets/container-13.svg" alt="" className="mr-2 shrink-0" />
-          Simpan Perubahan
-        </Button>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-xs text-blue-700 font-medium w-fit">
+          ✅ Real-time via Convex — data tidak hilang saat refresh
+        </div>
       </header>
 
-      <section className="grid grid-cols-12 gap-6">
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Slider Management */}
-        <Card className="col-[1_/_9] rounded-xl border border-[#c3c6d1] bg-white shadow-[0px_1px_2px_#0000000d]">
-          <CardContent className="flex flex-col gap-6 p-6">
+        <Card className="lg:col-span-8 rounded-xl border border-[#c3c6d1] bg-white shadow-[0px_1px_2px_#0000000d]">
+          <CardContent className="flex flex-col gap-6 p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-normal text-[#001e40] [font-family:'Public_Sans',Helvetica]">
                 Manajemen Hero Slider
@@ -238,9 +242,9 @@ export default function KontenSliderPage() {
             ) : (
               <div className="flex flex-col gap-6">
                 <AnimatePresence mode="popLayout">
-                  {sliders.map((slider) => (
+                  {(sliders as ConvexSlider[]).map((slider) => (
                     <motion.div
-                      key={slider.id}
+                      key={slider._id}
                       layout
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -249,8 +253,8 @@ export default function KontenSliderPage() {
                     >
                       <SliderCard
                         slider={slider}
-                        onDelete={(id) => deleteMutation.mutate(id)}
-                        onUpdate={(id, data) => updateMutation.mutate({ id, data })}
+                        onDelete={handleDelete}
+                        onUpdate={handleUpdate}
                       />
                     </motion.div>
                   ))}
@@ -259,24 +263,20 @@ export default function KontenSliderPage() {
                 <Button
                   data-testid="button-tambah-banner"
                   variant="ghost"
-                  onClick={() => createMutation.mutate()}
-                  disabled={createMutation.isPending}
+                  onClick={handleCreate}
                   className="h-auto w-full justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 py-4 text-[#5f5e5e] hover:bg-slate-50"
                 >
-                  <img src="/figmaAssets/container-11.svg" alt="" className="shrink-0" />
-                  <span className="text-base">
-                    {createMutation.isPending ? "Menambahkan…" : "Tambah Banner Baru"}
-                  </span>
+                  <span className="text-base">+ Tambah Banner Baru</span>
                 </Button>
               </div>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Sidebar */}
-        <aside className="col-[9_/_13] flex flex-col gap-6">
+        <aside className="lg:col-span-4 flex flex-col gap-6">
           <Card className="rounded-xl border border-[#c3c6d1] bg-white shadow-[0px_1px_2px_#0000000d]">
-            <CardContent className="flex flex-col gap-5 p-6">
+            <CardContent className="flex flex-col gap-5 p-4 sm:p-6">
               <h2 className="text-base font-normal text-[#001e40] [font-family:'Public_Sans',Helvetica]">
                 Metadata Situs
               </h2>
@@ -284,7 +284,6 @@ export default function KontenSliderPage() {
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-[#5f5e5e]">Meta Title</label>
                   <Input
-                    data-testid="input-meta-title"
                     defaultValue="Putik Cemerlang | Kab. Malang"
                     className="border-slate-200 text-sm"
                   />
@@ -293,15 +292,13 @@ export default function KontenSliderPage() {
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-[#5f5e5e]">Meta Description</label>
                   <Textarea
-                    data-testid="input-meta-description"
                     defaultValue="Portal pusat informasi maritim resmi Kabupaten Malang untuk pelayanan publik, data perikanan, dan edukasi konservasi laut."
-                    className="min-h-[100px] resize-none border-slate-200 text-sm"
+                    className="min-h-[80px] resize-none border-slate-200 text-sm"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-[#5f5e5e]">Keywords (SEO)</label>
                   <Input
-                    data-testid="input-keywords"
                     defaultValue="maritim, malang, perikanan, informasi laut"
                     className="border-slate-200 text-sm"
                   />
@@ -311,42 +308,16 @@ export default function KontenSliderPage() {
           </Card>
 
           <Card className="rounded-xl border-0 bg-[#003366]">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-start gap-3">
-                <img src="/figmaAssets/icon.svg" alt="" className="h-6 w-6 shrink-0" />
                 <div>
                   <h3 className="mb-1.5 text-sm font-bold text-white">Tip Optimasi Gambar</h3>
                   <p className="text-xs leading-relaxed text-[#799dd6]">
                     Gunakan gambar rasio 16:9 dan resolusi minimal 1920×1080px. Pastikan ukuran
-                    file di bawah 500 KB. Cloudinary akan mengompresi otomatis saat diunggah.
+                    file di bawah 500 KB. Cloudinary akan mengompresi ke WebP otomatis saat diunggah.
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-xl border border-[#c3c6d1] bg-white shadow-[0px_1px_2px_#0000000d]">
-            <CardContent className="flex flex-col gap-4 p-6">
-              <h2 className="text-base font-normal text-[#001e40] [font-family:'Public_Sans',Helvetica]">
-                Konten General
-              </h2>
-              {[
-                { icon: "/figmaAssets/container-6.svg", label: "Running Text" },
-                { icon: "/figmaAssets/container-9.svg", label: "FAQ Section" },
-                { icon: "/figmaAssets/container-12.svg", label: "Marine Alerts" },
-              ].map((item, i) => (
-                <button
-                  key={i}
-                  data-testid={`button-konten-general-${i}`}
-                  className="flex w-full items-center justify-between rounded-lg bg-slate-50 p-3 transition-colors hover:bg-slate-100"
-                >
-                  <span className="flex items-center gap-3">
-                    <img src={item.icon} alt="" className="shrink-0" />
-                    <span className="text-sm font-medium text-[#191c1e]">{item.label}</span>
-                  </span>
-                  <span className="text-sm text-[#3a5f94]">Edit</span>
-                </button>
-              ))}
             </CardContent>
           </Card>
         </aside>

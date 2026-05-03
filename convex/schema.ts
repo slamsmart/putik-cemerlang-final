@@ -31,4 +31,14 @@ export default defineSchema({
     tanggal: v.string(),
     status: v.string(), // "Belum Dibalas", "Sudah Dibalas", "Diarsipkan"
   }),
+
+  sliders: defineTable({
+    title: v.string(),
+    subtitle: v.string(),
+    ctaText: v.string(),
+    ctaLink: v.string(),
+    imageUrl: v.string(),
+    displayOrder: v.number(),
+    isActive: v.boolean(),
+  }).index("by_displayOrder", ["displayOrder"]),
 });
