@@ -5,14 +5,22 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
-import { Box } from "@/pages/Box";
+import LandingPage from "@/pages/LandingPage";
+import DashboardPage from "@/pages/DashboardPage";
+import BukuTamuPage from "@/pages/BukuTamuPage";
+import ArsipSuratPage from "@/pages/ArsipSuratPage";
+import KontenSliderPage from "@/pages/KontenSliderPage";
+import PengaturanPage from "@/pages/PengaturanPage";
 
 function Router() {
   return (
     <Switch>
-      {/* Add pages below */}
-      <Route path="/" component={Box} />
-      {/* Fallback to 404 */}
+      <Route path="/" component={LandingPage} />
+      <Route path="/admin" component={DashboardPage} />
+      <Route path="/admin/buku-tamu" component={BukuTamuPage} />
+      <Route path="/admin/arsip-surat" component={ArsipSuratPage} />
+      <Route path="/admin/konten-slider" component={KontenSliderPage} />
+      <Route path="/admin/pengaturan" component={PengaturanPage} />
       <Route component={NotFound} />
     </Switch>
   );
