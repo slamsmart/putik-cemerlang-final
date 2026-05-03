@@ -2,41 +2,13 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 
 const statsCards = [
-  {
-    label: "Total Pengunjung",
-    value: "24,381",
-    change: "+12% bulan ini",
-    positive: true,
-    icon: "👥",
-    color: "bg-blue-50 text-blue-900",
-  },
-  {
-    label: "Buku Tamu Masuk",
-    value: "142",
-    change: "+8 hari ini",
-    positive: true,
-    icon: "📖",
-    color: "bg-green-50 text-green-800",
-  },
-  {
-    label: "Surat Diarsipkan",
-    value: "1,024",
-    change: "+3 minggu ini",
-    positive: true,
-    icon: "📄",
-    color: "bg-amber-50 text-amber-800",
-  },
-  {
-    label: "Slider Aktif",
-    value: "3",
-    change: "Dari 5 banner",
-    positive: null,
-    icon: "🖼️",
-    color: "bg-purple-50 text-purple-800",
-  },
+  { label: "Total Pengunjung", value: "24,381", change: "+12% bulan ini", icon: "👥", color: "bg-blue-50 text-blue-900" },
+  { label: "Buku Tamu Masuk", value: "142", change: "+8 hari ini", icon: "📖", color: "bg-green-50 text-green-800" },
+  { label: "Surat Diarsipkan", value: "1,024", change: "+3 minggu ini", icon: "📄", color: "bg-amber-50 text-amber-800" },
+  { label: "Slider Aktif", value: "3", change: "Dari 5 banner", icon: "🖼️", color: "bg-purple-50 text-purple-800" },
 ];
 
 const recentActivities = [
@@ -62,6 +34,8 @@ const statusColor: Record<string, string> = {
 };
 
 export default function DashboardPage() {
+  const [, setLocation] = useLocation();
+
   return (
     <AdminLayout>
       <header className="mb-10 flex items-end justify-between">
@@ -73,15 +47,14 @@ export default function DashboardPage() {
             Selamat datang kembali. Berikut ringkasan aktivitas portal Putik Cemerlang.
           </p>
         </div>
-        <Link href="/">
-          <Button
-            data-testid="button-lihat-portal"
-            variant="outline"
-            className="rounded-lg border-[#c3c6d1] text-[#001e40] hover:bg-slate-50"
-          >
-            Lihat Portal Publik
-          </Button>
-        </Link>
+        <Button
+          data-testid="button-lihat-portal"
+          variant="outline"
+          onClick={() => setLocation("/")}
+          className="rounded-lg border-[#c3c6d1] text-[#001e40] hover:bg-slate-50"
+        >
+          Lihat Portal Publik
+        </Button>
       </header>
 
       {/* Stats Cards */}
@@ -153,17 +126,17 @@ export default function DashboardPage() {
               </h2>
               <div className="flex flex-col gap-2">
                 {quickLinks.map((ql) => (
-                  <Link key={ql.label} href={ql.href}>
-                    <button
-                      data-testid={`link-quicklink-${ql.label.toLowerCase().replace(/\s+/g, "-")}`}
-                      className="flex w-full items-center gap-3 rounded-lg bg-slate-50 p-3 text-left transition-colors hover:bg-slate-100"
-                    >
-                      <img src={ql.icon} alt="" aria-hidden="true" className="shrink-0" />
-                      <span className="text-sm font-medium text-[#191c1e] [font-family:'Inter',Helvetica]">
-                        {ql.label}
-                      </span>
-                    </button>
-                  </Link>
+                  <button
+                    key={ql.label}
+                    data-testid={`link-quicklink-${ql.label.toLowerCase().replace(/\s+/g, "-")}`}
+                    onClick={() => setLocation(ql.href)}
+                    className="flex w-full items-center gap-3 rounded-lg bg-slate-50 p-3 text-left transition-colors hover:bg-slate-100"
+                  >
+                    <img src={ql.icon} alt="" aria-hidden="true" className="shrink-0" />
+                    <span className="text-sm font-medium text-[#191c1e] [font-family:'Inter',Helvetica]">
+                      {ql.label}
+                    </span>
+                  </button>
                 ))}
               </div>
             </CardContent>

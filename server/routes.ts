@@ -4,12 +4,21 @@ import multer from "multer";
 import { storage } from "./storage";
 import { insertSliderSchema, updateSliderSchema } from "@shared/schema";
 
-const upload = multer({
+const uploadImage = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith("image/")) cb(null, true);
     else cb(new Error("Only image files allowed"));
+  },
+});
+
+const uploadPdf = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype === "application/pdf" || file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only PDF or image files allowed"));
   },
 });
 

@@ -40,3 +40,8 @@ waitForPort = 5000
 
 [agent]
 stack = "FULLSTACK_JS"
+
+[userenv]
+
+[userenv.shared]
+VITE_CONVEX_URL = "https://mellow-gerbil-927.convex.cloud"
