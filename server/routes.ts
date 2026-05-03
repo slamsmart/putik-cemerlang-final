@@ -1,8 +1,21 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { randomBytes } from "crypto";
 import { storage } from "./storage";
 import { insertSliderSchema, updateSliderSchema } from "@shared/schema";
+
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+function saveLocal(buffer: Buffer, originalName: string): string {
+  const ext = path.extname(originalName) || ".bin";
+  const name = `${Date.now()}-${randomBytes(4).toString("hex")}${ext}`;
+  fs.writeFileSync(path.join(uploadsDir, name), buffer);
+  return `/uploads/${name}`;
+}
 
 const uploadImage = multer({
   storage: multer.memoryStorage(),
@@ -89,7 +102,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const url = await uploadToCloudinary(req.file.buffer, req.file.originalname);
       res.json({ url });
     } catch (e: any) {
-      res.status(500).json({ message: e?.message || "Upload failed" });
+      console.warn("Cloudinary image upload failed, falling back to local storage:", e?.message);
+      try {
+        const url = saveLocal(req.file.buffer, req.file.originalname);
+        res.json({ url, note: "Gambar disimpan lokal (Cloudinary tidak tersedia)." });
+      } catch (localErr: any) {
+        res.status(500).json({ message: localErr?.message || "Upload failed" });
+      }
     }
   });
 
@@ -99,9 +118,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
     const cloudinaryConfigured =
-      process.env.CLOUDINARY_CLOUD_NAME &&
-      process.env.CLOUDINARY_API_KEY &&
-      process.env.CLOUDINARY_API_SECRET;
+      (process.env.CLOUDINARY_CLOUD_NAME || "").trim() &&
+      (process.env.CLOUDINARY_API_KEY || "").trim() &&
+      (process.env.CLOUDINARY_API_SECRET || "").trim();
 
     if (!cloudinaryConfigured) {
       return res.json({
@@ -111,30 +130,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
 
     try {
-      const { v2: cloudinary } = await import("cloudinary");
-      const buffer = req.file.buffer;
+      const { uploadPdfToCloudinary } = await import("./cloudinary");
       const isPdf = req.file.mimetype === "application/pdf";
-
-      const url = await new Promise<string>((resolve, reject) => {
-        cloudinary.uploader
-          .upload_stream(
-            {
-              folder: "putik-cemerlang/arsip-surat",
-              public_id: `arsip_${Date.now()}`,
-              resource_type: isPdf ? "raw" : "image",
-              format: isPdf ? "pdf" : undefined,
-            },
-            (error, result) => {
-              if (error || !result) return reject(error || new Error("Upload failed"));
-              resolve(result.secure_url);
-            }
-          )
-          .end(buffer);
-      });
-
+      const url = await uploadPdfToCloudinary(req.file.buffer, isPdf);
       res.json({ url });
     } catch (e: any) {
-      res.status(500).json({ message: e?.message || "Upload failed" });
+      console.warn("Cloudinary PDF upload failed, falling back to local storage:", e?.message);
+      try {
+        const url = saveLocal(req.file.buffer, req.file.originalname);
+        res.json({ url, note: "File disimpan lokal (Cloudinary tidak tersedia)." });
+      } catch (localErr: any) {
+        res.status(500).json({ message: localErr?.message || "Upload failed" });
+      }
     }
   });
 
@@ -153,9 +160,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/arsip-surat", async (req: Request, res: Response) => {
     try {
       const { convexMutation } = await import("./convexClient");
-      const data = await convexMutation("arsipSurat:create", req.body);
+      const { nomor, perihal, pengirimTujuan, tanggal, jenis, status, pdfUrl } = req.body;
+      const args: Record<string, unknown> = { nomor, perihal, pengirimTujuan, tanggal, jenis, status };
+      if (pdfUrl && typeof pdfUrl === "string" && pdfUrl.trim()) {
+        args.pdfUrl = pdfUrl.trim();
+      }
+      const data = await convexMutation("arsipSurat:create", args);
       res.status(201).json(data);
     } catch (e: any) {
+      console.error("Convex create error:", e);
       res.status(500).json({ message: e?.message || "Failed to create" });
     }
   });
