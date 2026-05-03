@@ -19,7 +19,7 @@ export const create = mutation({
     pengirimTujuan: v.string(),
     tanggal: v.string(),
     jenis: v.union(v.literal("Masuk"), v.literal("Keluar")),
-    status: v.union(v.literal("Terarsip"), v.literal("Terkirim"), v.literal("Belum Dibaca")),
+    status: v.union(v.literal("Terarsip"), v.literal("Terbaca"), v.literal("Terkirim"), v.literal("Belum Dibaca")),
     pdfUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -38,7 +38,7 @@ export const update = mutation({
     pengirimTujuan: v.optional(v.string()),
     tanggal: v.optional(v.string()),
     jenis: v.optional(v.union(v.literal("Masuk"), v.literal("Keluar"))),
-    status: v.optional(v.union(v.literal("Terarsip"), v.literal("Terkirim"), v.literal("Belum Dibaca"))),
+    status: v.optional(v.union(v.literal("Terarsip"), v.literal("Terbaca"), v.literal("Terkirim"), v.literal("Belum Dibaca"))),
     pdfUrl: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...patch }) => {
@@ -69,6 +69,18 @@ export const seed = mutation({
 
     for (const s of seeds) {
       await ctx.db.insert("arsipSurat", { ...s, createdAt: Date.now() });
+    }
+  },
+});
+
+export const migrateStatus = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const records = await ctx.db.query("arsipSurat").collect();
+    for (const record of records) {
+      if (record.status === "Terbaca") {
+        await ctx.db.patch(record._id, { status: "Terarsip" });
+      }
     }
   },
 });
