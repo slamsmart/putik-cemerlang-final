@@ -106,4 +106,4 @@ app.use((req, res, next) => {
   });
 })();
 
-export default app;
+module.exports = app;
