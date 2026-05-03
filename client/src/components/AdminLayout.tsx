@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Separator } from "@/components/ui/separator";
+import { logout } from "@/lib/auth";
 
 const primaryNavItems = [
   {
@@ -30,11 +31,6 @@ const secondaryNavItems = [
     icon: "/figmaAssets/container-8.svg",
     href: "/admin/pengaturan",
   },
-  {
-    label: "Keluar",
-    icon: "/figmaAssets/container.svg",
-    href: "/",
-  },
 ];
 
 const footerLinks = [
@@ -45,7 +41,12 @@ const footerLinks = [
 ];
 
 function AdminSidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/admin/login");
+  };
 
   return (
     <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col justify-between border-r border-slate-200 bg-slate-50 p-4 z-10">
@@ -104,6 +105,17 @@ function AdminSidebar() {
               </button>
             </Link>
           ))}
+          <button
+            data-testid="button-logout"
+            type="button"
+            onClick={handleLogout}
+            className="h-auto w-full flex items-center justify-start gap-3 px-4 py-3 rounded-lg text-[#ba1a1a] hover:bg-red-50 transition-colors"
+          >
+            <img className="shrink-0" alt="" aria-hidden="true" src="/figmaAssets/container.svg" />
+            <span className="[font-family:'Inter',Helvetica] text-base font-normal leading-6 tracking-[0]">
+              Keluar
+            </span>
+          </button>
         </nav>
       </div>
     </aside>
