@@ -19,7 +19,7 @@ export const create = mutation({
     pengirimTujuan: v.string(),
     tanggal: v.string(),
     jenis: v.union(v.literal("Masuk"), v.literal("Keluar")),
-    status: v.union(v.literal("Terbaca"), v.literal("Terkirim"), v.literal("Belum Dibaca")),
+    status: v.union(v.literal("Terarsip"), v.literal("Terkirim"), v.literal("Belum Dibaca")),
     pdfUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -38,7 +38,7 @@ export const update = mutation({
     pengirimTujuan: v.optional(v.string()),
     tanggal: v.optional(v.string()),
     jenis: v.optional(v.union(v.literal("Masuk"), v.literal("Keluar"))),
-    status: v.optional(v.union(v.literal("Terbaca"), v.literal("Terkirim"), v.literal("Belum Dibaca"))),
+    status: v.optional(v.union(v.literal("Terarsip"), v.literal("Terkirim"), v.literal("Belum Dibaca"))),
     pdfUrl: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...patch }) => {
@@ -60,9 +60,9 @@ export const seed = mutation({
     if (existing.length > 0) return;
 
     const seeds = [
-      { nomor: "001/KKP/V/2024", perihal: "Undangan Rapat Koordinasi Perikanan", pengirimTujuan: "Dinas Kelautan & Perikanan Provinsi Jawa Timur", tanggal: "2024-05-03", jenis: "Masuk" as const, status: "Terbaca" as const },
+      { nomor: "001/KKP/V/2024", perihal: "Undangan Rapat Koordinasi Perikanan", pengirimTujuan: "Dinas Kelautan & Perikanan Provinsi Jawa Timur", tanggal: "2024-05-03", jenis: "Masuk" as const, status: "Terarsip" as const },
       { nomor: "022/DKP/V/2024", perihal: "Laporan Hasil Monitoring Zona Tangkap Q1 2024", pengirimTujuan: "Bidang Pengawasan DKP Kab. Malang", tanggal: "2024-05-02", jenis: "Keluar" as const, status: "Terkirim" as const },
-      { nomor: "035/KKP/V/2024", perihal: "Surat Edaran Tata Cara Perizinan Kapal Nelayan", pengirimTujuan: "Kementerian Kelautan dan Perikanan RI", tanggal: "2024-05-01", jenis: "Masuk" as const, status: "Terbaca" as const },
+      { nomor: "035/KKP/V/2024", perihal: "Surat Edaran Tata Cara Perizinan Kapal Nelayan", pengirimTujuan: "Kementerian Kelautan dan Perikanan RI", tanggal: "2024-05-01", jenis: "Masuk" as const, status: "Terarsip" as const },
       { nomor: "018/DKP/IV/2024", perihal: "Permohonan Data Statistik Perikanan 2023", pengirimTujuan: "BPS Kabupaten Malang", tanggal: "2024-04-28", jenis: "Masuk" as const, status: "Belum Dibaca" as const },
       { nomor: "045/DKP/IV/2024", perihal: "Rekomendasi Lokasi Budidaya Rumput Laut", pengirimTujuan: "Bidang Budidaya DKP Kab. Malang", tanggal: "2024-04-25", jenis: "Keluar" as const, status: "Terkirim" as const },
     ];

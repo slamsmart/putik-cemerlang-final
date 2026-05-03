@@ -18,7 +18,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
 type Jenis = "Masuk" | "Keluar";
-type Status = "Terbaca" | "Terkirim" | "Belum Dibaca";
+type Status = "Terarsip" | "Terkirim" | "Belum Dibaca";
 
 interface ArsipItem {
   _id: string;
@@ -33,7 +33,7 @@ interface ArsipItem {
 }
 
 const statusStyle: Record<string, string> = {
-  Terbaca: "bg-green-100 text-green-700",
+  Terarsip: "bg-green-100 text-green-700",
   Terkirim: "bg-blue-100 text-blue-800",
   "Belum Dibaca": "bg-amber-100 text-amber-800",
 };
@@ -389,7 +389,7 @@ export default function ArsipSuratPage() {
                 <SelectTrigger data-testid="select-status" className="border-slate-200 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Belum Dibaca">Belum Dibaca</SelectItem>
-                  <SelectItem value="Terbaca">Terbaca</SelectItem>
+                  <SelectItem value="Terarsip">Terarsip</SelectItem>
                   <SelectItem value="Terkirim">Terkirim</SelectItem>
                 </SelectContent>
               </Select>
