@@ -12,4 +12,23 @@ export default defineSchema({
     pdfUrl: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_jenis", ["jenis"]).index("by_created", ["createdAt"]),
+
+  stats: defineTable({
+    value: v.string(),
+    label: v.string(),
+    icon: v.string(),
+    highlight: v.boolean(),
+    displayOrder: v.number(),
+    isActive: v.boolean(),
+    linkUrl: v.string(),
+  }).index("by_displayOrder", ["displayOrder"]),
+
+  guestbook: defineTable({
+    nama: v.string(),
+    email: v.string(),
+    pekerjaan: v.string(),
+    pesan: v.string(),
+    tanggal: v.string(),
+    status: v.string(), // "Belum Dibalas", "Sudah Dibalas", "Diarsipkan"
+  }),
 });

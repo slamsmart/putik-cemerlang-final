@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 import { randomBytes } from "crypto";
 import { storage } from "./storage";
-import { insertSliderSchema, updateSliderSchema } from "@shared/schema";
+import { insertSliderSchema, updateSliderSchema, insertStatSchema, updateStatSchema } from "@shared/schema";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -62,7 +62,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const parsed = updateSliderSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
     try {
-      const slider = await storage.updateSlider(req.params.id, parsed.data);
+      const slider = await storage.updateSlider(req.params.id as string, parsed.data);
       if (!slider) return res.status(404).json({ message: "Slider not found" });
       res.json(slider);
     } catch (e) {
@@ -72,11 +72,57 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.delete("/api/sliders/:id", async (req: Request, res: Response) => {
     try {
-      const ok = await storage.deleteSlider(req.params.id);
+      const ok = await storage.deleteSlider(req.params.id as string);
       if (!ok) return res.status(404).json({ message: "Slider not found" });
       res.status(204).end();
     } catch (e) {
       res.status(500).json({ message: "Failed to delete slider" });
+    }
+  });
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+
+  app.get("/api/stats", async (_req, res: Response) => {
+    try {
+      const { convexQuery } = await import("./convexClient");
+      const stats = await convexQuery("stats:list");
+      res.json(stats);
+    } catch (e) {
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  app.post("/api/stats", async (req: Request, res: Response) => {
+    const parsed = insertStatSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    try {
+      const { convexMutation } = await import("./convexClient");
+      const statId = await convexMutation("stats:create", parsed.data);
+      res.status(201).json({ id: statId, ...parsed.data });
+    } catch (e) {
+      res.status(500).json({ message: "Failed to create stat" });
+    }
+  });
+
+  app.put("/api/stats/:id", async (req: Request, res: Response) => {
+    const parsed = updateStatSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    try {
+      const { convexMutation } = await import("./convexClient");
+      await convexMutation("stats:update", { id: req.params.id, ...parsed.data });
+      res.json({ id: req.params.id, ...parsed.data });
+    } catch (e) {
+      res.status(500).json({ message: "Failed to update stat" });
+    }
+  });
+
+  app.delete("/api/stats/:id", async (req: Request, res: Response) => {
+    try {
+      const { convexMutation } = await import("./convexClient");
+      await convexMutation("stats:remove", { id: req.params.id });
+      res.status(204).end();
+    } catch (e) {
+      res.status(500).json({ message: "Failed to delete stat" });
     }
   });
 
@@ -91,10 +137,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       process.env.CLOUDINARY_API_SECRET;
 
     if (!cloudinaryConfigured) {
-      return res.json({
-        url: `https://placehold.co/1920x1080/001e40/ffffff?text=${encodeURIComponent(req.file.originalname)}`,
-        note: "Cloudinary credentials not configured.",
-      });
+      try {
+        const url = saveLocal(req.file.buffer, req.file.originalname);
+        return res.json({ url, note: "Gambar disimpan lokal (Cloudinary tidak dikonfigurasi)." });
+      } catch (localErr: any) {
+        return res.status(500).json({ message: localErr?.message || "Upload failed" });
+      }
     }
 
     try {
@@ -176,7 +224,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.delete("/api/arsip-surat/:id", async (req: Request, res: Response) => {
     try {
       const { convexMutation } = await import("./convexClient");
-      await convexMutation("arsipSurat:remove", { id: req.params.id });
+      await convexMutation("arsipSurat:remove", { id: req.params.id as string });
       res.status(204).end();
     } catch (e: any) {
       res.status(500).json({ message: e?.message || "Failed to delete" });

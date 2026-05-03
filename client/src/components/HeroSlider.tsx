@@ -43,16 +43,6 @@ const fallbackSliders: Slider[] = [
     displayOrder: 1,
     isActive: true,
   },
-  {
-    id: "slider-3",
-    title: "Konservasi Ekosistem Laut",
-    subtitle: "Bersama menjaga kelestarian laut Malang untuk generasi yang akan datang.",
-    ctaText: "Gabung Relawan",
-    ctaLink: "/konservasi",
-    imageUrl: "/figmaAssets/background-1.svg",
-    displayOrder: 2,
-    isActive: true,
-  },
 ];
 
 export function HeroSlider() {

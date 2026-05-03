@@ -21,14 +21,6 @@ const heroSliders = [
     cta: "Lihat Program",
     link: "/program",
   },
-  {
-    image: "/figmaAssets/background-1.svg",
-    headline: "Konservasi Ekosistem Laut",
-    subheadline:
-      "Bersama menjaga kelestarian laut\nMalang untuk generasi yang akan\ndatang.",
-    cta: "Gabung Relawan",
-    link: "/konservasi",
-  },
 ];
 
 const generalContents = [

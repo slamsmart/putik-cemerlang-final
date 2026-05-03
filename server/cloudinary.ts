@@ -15,6 +15,8 @@ export async function uploadToCloudinary(
       .upload_stream(
         {
           folder: "putik-cemerlang/sliders",
+          format: "webp",
+          quality: "auto",
         },
         (error, result) => {
           if (error || !result) return reject(error || new Error("Upload failed"));

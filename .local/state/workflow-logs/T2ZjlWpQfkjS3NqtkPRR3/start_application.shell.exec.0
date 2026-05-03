@@ -1,0 +1,17 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K12:49:04 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+12:49:07 PM [express] GET /api/sliders 200 in 2ms :: [{"id":"slider-1","title":"Pelayanan Informasi Maritim Terpadu","subtitle":"Akses data kelautan dan perikanan Kabupaten Malang secara transparan dan akuntabel.","ctaText":"Pelajari Selengkapnya","ctaLink":"/layanan","imageUrl":"/figmaAssets/background.svg","displayOrder":0,"isActive":true},{"id":"slider-2","title":"Modernisasi Sektor Perikanan","subtitle":"Mendukung nelayan lokal dengan teknologi dan informasi data laut terkini.","ctaText":"Lihat Program","ctaLink":"/program","imageUrl":"/figmaAssets/background-2.svg","displayOrder":1,"isActive":true},{"id":"slider-3","title":"Konservasi Ekosistem Laut","subtitle":"Bersama menjaga kelestarian laut Malang untuk generasi yang akan datang.","ctaText":"Gabung Relawan","ctaLink":"/konservasi","imageUrl":"/figmaAssets/background-1.svg","displayOrder":2,"isActive":true}]
+12:49:08 PM [express] GET /api/sliders 304 in 0ms :: [{"id":"slider-1","title":"Pelayanan Informasi Maritim Terpadu","subtitle":"Akses data kelautan dan perikanan Kabupaten Malang secara transparan dan akuntabel.","ctaText":"Pelajari Selengkapnya","ctaLink":"/layanan","imageUrl":"/figmaAssets/background.svg","displayOrder":0,"isActive":true},{"id":"slider-2","title":"Modernisasi Sektor Perikanan","subtitle":"Mendukung nelayan lokal dengan teknologi dan informasi data laut terkini.","ctaText":"Lihat Program","ctaLink":"/program","imageUrl":"/figmaAssets/background-2.svg","displayOrder":1,"isActive":true},{"id":"slider-3","title":"Konservasi Ekosistem Laut","subtitle":"Bersama menjaga kelestarian laut Malang untuk generasi yang akan datang.","ctaText":"Gabung Relawan","ctaLink":"/konservasi","imageUrl":"/figmaAssets/background-1.svg","displayOrder":2,"isActive":true}]
+12:49:20 PM [express] POST /api/arsip-surat 201 in 392ms :: "j574557yej8wtawvjfmmj2j39s860pw5"
+Cloudinary image upload error: {
+  message: [32m'Server returned unexpected status code - 403'[39m,
+  http_code: [33m403[39m,
+  name: [32m'UnexpectedResponse'[39m
+}
+12:49:31 PM [express] POST /api/upload 500 in 1455ms :: {"message":"Server returned unexpected status code - 403"}

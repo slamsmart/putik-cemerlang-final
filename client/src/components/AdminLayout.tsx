@@ -23,6 +23,11 @@ const primaryNavItems = [
     icon: "/figmaAssets/container-2.svg",
     href: "/admin/konten-slider",
   },
+  {
+    label: "Statistik Layanan",
+    icon: "/figmaAssets/container-12.svg",
+    href: "/admin/statistik-layanan",
+  },
 ];
 
 const secondaryNavItems = [
@@ -149,7 +154,7 @@ function AdminFooter() {
       </div>
       <div className="w-full border-t border-[#ffffff1a] pt-6">
         <p className="[font-family:'Inter',Helvetica] text-sm font-normal text-slate-400">
-          © 2024 Marine Information Center - Kabupaten Malang. Seluruh Hak Cipta Dilindungi.
+          © 2025 Putik Cemerlang - Cabdin KP Kab. Malang. Seluruh Hak Cipta Dilindungi.
         </p>
       </div>
     </footer>

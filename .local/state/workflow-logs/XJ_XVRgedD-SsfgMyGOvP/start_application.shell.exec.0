@@ -1,0 +1,14 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K12:55:32 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+12:55:36 PM [express] GET /api/sliders 304 in 2ms :: [{"id":"slider-1","title":"Pelayanan Informasi Maritim Terpadu","subtitle":"Akses data kelautan dan perikanan Kabupaten Malang secara transparan dan akuntabel.","ctaText":"Pelajari Selengkapnya","ctaLink":"/layanan","imageUrl":"/figmaAssets/background.svg","displayOrder":0,"isActive":true},{"id":"slider-2","title":"Modernisasi Sektor Perikanan","subtitle":"Mendukung nelayan lokal dengan teknologi dan informasi data laut terkini.","ctaText":"Lihat Program","ctaLink":"/program","imageUrl":"/figmaAssets/background-2.svg","displayOrder":1,"isActive":true},{"id":"slider-3","title":"Konservasi Ekosistem Laut","subtitle":"Bersama menjaga kelestarian laut Malang untuk generasi yang akan datang.","ctaText":"Gabung Relawan","ctaLink":"/konservasi","imageUrl":"/figmaAssets/background-1.svg","displayOrder":2,"isActive":true}]
+Cloudinary image upload failed, falling back to local storage: Server returned unexpected status code - 403
+12:55:43 PM [express] POST /api/upload 200 in 1406ms :: {"url":"/uploads/1777812943319-d55dd38a.png","note":"Gambar disimpan lokal (Cloudinary tidak tersedia)."}
+Cloudinary PDF upload failed, falling back to local storage: Server returned unexpected status code - 403
+12:55:44 PM [express] POST /api/upload-pdf 200 in 1051ms :: {"url":"/uploads/1777812944807-180a2306.png","note":"File disimpan lokal (Cloudinary tidak tersedia)."}
+12:56:06 PM [express] GET /api/sliders 304 in 1ms :: [{"id":"slider-1","title":"Pelayanan Informasi Maritim Terpadu","subtitle":"Akses data kelautan dan perikanan Kabupaten Malang secara transparan dan akuntabel.","ctaText":"Pelajari Selengkapnya","ctaLink":"/layanan","imageUrl":"/figmaAssets/background.svg","displayOrder":0,"isActive":true},{"id":"slider-2","title":"Modernisasi Sektor Perikanan","subtitle":"Mendukung nelayan lokal dengan teknologi dan informasi data laut terkini.","ctaText":"Lihat Program","ctaLink":"/program","imageUrl":"/figmaAssets/background-2.svg","displayOrder":1,"isActive":true},{"id":"slider-3","title":"Konservasi Ekosistem Laut","subtitle":"Bersama menjaga kelestarian laut Malang untuk generasi yang akan datang.","ctaText":"Gabung Relawan","ctaLink":"/konservasi","imageUrl":"/figmaAssets/background-1.svg","displayOrder":2,"isActive":true}]

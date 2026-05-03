@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Badge } from "@/components/ui/badge";
@@ -267,9 +269,9 @@ export default function KontenSliderPage() {
                   </span>
                 </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
 
         {/* Sidebar */}
         <aside className="col-[9_/_13] flex flex-col gap-6">

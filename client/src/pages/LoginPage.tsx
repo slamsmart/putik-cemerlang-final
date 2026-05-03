@@ -47,7 +47,7 @@ export default function LoginPage() {
             PUTIK CEMERLANG
           </h1>
           <p className="mt-1 text-sm text-blue-200 [font-family:'Inter',Helvetica]">
-            Portal Admin — Kabupaten Malang
+            Portal Admin — Cabang Dinas Kelautan dan Perikanan Kab, Malang
           </p>
         </div>
 
@@ -130,7 +130,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-blue-300 [font-family:'Inter',Helvetica]">
-          © 2024 Dinas Kelautan &amp; Perikanan Kabupaten Malang
+          © 2026 Cabang Dinas Kelautan &amp; Perikanan Kabupaten Malang
         </p>
       </motion.div>
     </div>

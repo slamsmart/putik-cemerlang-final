@@ -51,8 +51,7 @@ export const FooterSubsection = (): JSX.Element => {
       <Card className="w-full max-w-screen-xl border-0 border-t border-[#ffffff1a] bg-transparent pt-8 shadow-none">
         <CardContent className="p-0">
           <p className="[font-family:'Inter',Helvetica] text-sm font-normal leading-5 tracking-[0] text-slate-400">
-            © 2024 Marine Information Center - Kabupaten Malang. Seluruh Hak
-            Cipta Dilindungi.
+            © 2025 Putik Cemerlang - Cabdin KP Kab. Malang. Seluruh Hak Cipta Dilindungi.
           </p>
         </CardContent>
       </Card>

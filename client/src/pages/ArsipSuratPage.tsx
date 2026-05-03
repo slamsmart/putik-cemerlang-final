@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 type Jenis = "Masuk" | "Keluar";
 type Status = "Terbaca" | "Terkirim" | "Belum Dibaca";
@@ -57,6 +59,8 @@ export default function ArsipSuratPage() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [filterJenis, setFilterJenis] = useState("Semua");
+  const [filterBulan, setFilterBulan] = useState("Semua");
+  const [filterTahun, setFilterTahun] = useState("Semua");
   const [showDialog, setShowDialog] = useState(false);
   const [viewItem, setViewItem] = useState<ArsipItem | null>(null);
   const [form, setForm] = useState(defaultForm);
@@ -129,8 +133,46 @@ export default function ArsipSuratPage() {
       item.perihal.toLowerCase().includes(q) ||
       item.pengirimTujuan.toLowerCase().includes(q);
     const matchJenis = filterJenis === "Semua" || item.jenis === filterJenis;
-    return matchSearch && matchJenis;
+    const d = new Date(item.tanggal);
+    const matchBulan = filterBulan === "Semua" || (d.getMonth() + 1).toString() === filterBulan;
+    const matchTahun = filterTahun === "Semua" || d.getFullYear().toString() === filterTahun;
+    return matchSearch && matchJenis && matchBulan && matchTahun;
   });
+
+  const handleExportZip = async () => {
+    if (filtered.length === 0) {
+      toast({ title: "Tidak ada data untuk diekspor", variant: "destructive" });
+      return;
+    }
+    const zip = new JSZip();
+    const folderName = `Arsip_Surat_${filterBulan !== "Semua" ? `${filterBulan}_${filterTahun}` : filterTahun !== "Semua" ? filterTahun : "Semua"}`;
+    const folder = zip.folder(folderName);
+    if (!folder) return;
+
+    let csv = "Nomor Surat,Perihal,Pengirim/Tujuan,Tanggal,Jenis,Status,PDF_URL\n";
+    for (const item of filtered) {
+      csv += `"${item.nomor}","${item.perihal}","${item.pengirimTujuan}","${formatTanggal(item.tanggal)}","${item.jenis}","${item.status}","${item.pdfUrl || ""}"\n`;
+      if (item.pdfUrl) {
+        try {
+          const res = await fetch(item.pdfUrl);
+          if (res.ok) {
+            const blob = await res.blob();
+            const ext = item.pdfUrl.split("?")[0].split(".").pop() || "pdf";
+            const safeName = item.nomor.replace(/[^a-zA-Z0-9]/g, "_");
+            folder.file(`${safeName}.${ext}`, blob);
+          } else {
+            folder.file(`${item.nomor.replace(/[^a-zA-Z0-9]/g, "_")}_link.txt`, item.pdfUrl);
+          }
+        } catch {
+          folder.file(`${item.nomor.replace(/[^a-zA-Z0-9]/g, "_")}_link.txt`, item.pdfUrl);
+        }
+      }
+    }
+    folder.file("index.csv", csv);
+    const content = await zip.generateAsync({ type: "blob" });
+    saveAs(content, `${folderName}.zip`);
+    toast({ title: `ZIP berhasil diekspor (${filtered.length} surat)` });
+  };
 
   const masukCount = arsipList.filter((a) => a.jenis === "Masuk").length;
   const keluarCount = arsipList.filter((a) => a.jenis === "Keluar").length;
@@ -173,7 +215,7 @@ export default function ArsipSuratPage() {
 
       <Card className="rounded-xl border border-[#c3c6d1] bg-white shadow-[0px_1px_2px_#0000000d]">
         <CardContent className="p-6">
-          <div className="mb-5 flex items-center gap-3">
+          <div className="mb-5 flex flex-wrap items-center gap-3">
             <Input
               data-testid="input-search-arsip"
               placeholder="Cari nomor surat, perihal, atau pengirim..."
@@ -195,6 +237,37 @@ export default function ArsipSuratPage() {
                 </button>
               ))}
             </div>
+            <div className="flex items-center gap-2">
+              <Select value={filterBulan} onValueChange={setFilterBulan}>
+                <SelectTrigger className="w-[140px] rounded-md border-slate-200 text-xs"><SelectValue placeholder="Bulan" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Semua">Semua Bulan</SelectItem>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <SelectItem key={i + 1} value={(i + 1).toString()}>
+                      {new Date(0, i).toLocaleString("id-ID", { month: "long" })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterTahun} onValueChange={setFilterTahun}>
+                <SelectTrigger className="w-[120px] rounded-md border-slate-200 text-xs"><SelectValue placeholder="Tahun" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Semua">Semua Tahun</SelectItem>
+                  {[2023, 2024, 2025].map((t) => (
+                    <SelectItem key={t} value={t.toString()}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              data-testid="button-export-zip"
+              variant="outline"
+              size="sm"
+              onClick={handleExportZip}
+              className="ml-auto rounded-md border-slate-200 text-xs text-[#001e40] hover:bg-slate-50"
+            >
+              Export ZIP
+            </Button>
           </div>
 
           <div className="overflow-x-auto">

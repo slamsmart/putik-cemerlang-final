@@ -1,0 +1,36 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K12:43:38 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+12:43:42 PM [express] GET /api/sliders 304 in 2ms :: [{"id":"slider-1","title":"Pelayanan Informasi Maritim Terpadu","subtitle":"Akses data kelautan dan perikanan Kabupaten Malang secara transparan dan akuntabel.","ctaText":"Pelajari Selengkapnya","ctaLink":"/layanan","imageUrl":"/figmaAssets/background.svg","displayOrder":0,"isActive":true},{"id":"slider-2","title":"Modernisasi Sektor Perikanan","subtitle":"Mendukung nelayan lokal dengan teknologi dan informasi data laut terkini.","ctaText":"Lihat Program","ctaLink":"/program","imageUrl":"/figmaAssets/background-2.svg","displayOrder":1,"isActive":true},{"id":"slider-3","title":"Konservasi Ekosistem Laut","subtitle":"Bersama menjaga kelestarian laut Malang untuk generasi yang akan datang.","ctaText":"Gabung Relawan","ctaLink":"/konservasi","imageUrl":"/figmaAssets/background-1.svg","displayOrder":2,"isActive":true}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:45:12 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/ArsipSuratPage.tsx, /src/index.css[22m
+12:45:22 PM [express] GET /api/arsip-surat 200 in 14ms
+12:45:38 PM [express] GET /api/arsip-surat 200 in 10ms
+12:45:51 PM [express] HEAD /api/arsip-surat 200 in 7ms
