@@ -10,6 +10,7 @@
 
 import type * as arsipSurat from "../arsipSurat.js";
 import type * as guestbook from "../guestbook.js";
+import type * as sliders from "../sliders.js";
 import type * as stats from "../stats.js";
 
 import type {
@@ -21,6 +22,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   arsipSurat: typeof arsipSurat;
   guestbook: typeof guestbook;
+  sliders: typeof sliders;
   stats: typeof stats;
 }>;
 
