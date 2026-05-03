@@ -1,231 +1,241 @@
-import { useState, useMemo } from "react";
+import { useState, forwardRef, useImperativeHandle, useRef } from "react";
+import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { motion, AnimatePresence } from "framer-motion";
 import { AdminLayout } from "@/components/AdminLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import { useQuery as useConvexQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Download, TrendingUp } from "lucide-react";
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
-} from "recharts";
+import * as LucideIcons from "lucide-react";
 
-const statusStyle: Record<string, string> = {
-  "Belum Dibalas": "bg-[#fef9c3] text-[#a16207]",
-  "Sudah Dibalas": "bg-green-100 text-green-700",
-  "Diarsipkan": "bg-slate-100 text-slate-600",
-};
+const StatEditor = forwardRef(({ stat, onUpdate, onDelete }: { stat: any; onUpdate: any; onDelete: any }, ref) => {
+  const [value, setValue] = useState(stat.value);
+  const [label, setLabel] = useState(stat.label);
+  const [linkUrl, setLinkUrl] = useState(stat.linkUrl || "");
+  const [icon, setIcon] = useState(stat.icon);
+  const [highlight, setHighlight] = useState(stat.highlight);
+  const { toast } = useToast();
+  const IconComponent = (LucideIcons as any)[icon] || LucideIcons.Circle;
+
+  const handleSave = () => {
+    return onUpdate({
+      id: stat._id,
+      value,
+      label,
+      linkUrl,
+      icon,
+      highlight
+    }).then(() => {
+      toast({ title: "Statistik berhasil disimpan" });
+    }).catch(() => {
+      toast({ title: "Gagal menyimpan statistik", variant: "destructive" });
+    });
+  };
+
+  useImperativeHandle(ref, () => ({
+    save: handleSave
+  }));
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex items-center gap-3 mb-2">
+         <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${highlight ? "bg-[#001e40] text-white" : "bg-[#d5e3ff]/30 text-[#001e40]"}`}>
+            <IconComponent className="h-5 w-5" />
+         </div>
+         <div className="flex-1 font-semibold text-sm text-[#001e40]">{label || "Statistik Baru"}</div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1">
+           <label className="text-xs text-[#5f5e5e]">Angka/Nilai</label>
+           <Input value={value} onChange={e => setValue(e.target.value)} className="text-sm h-8" />
+        </div>
+        <div className="flex flex-col gap-1">
+           <label className="text-xs text-[#5f5e5e]">Label Deskripsi</label>
+           <Input value={label} onChange={e => setLabel(e.target.value)} className="text-sm h-8" />
+        </div>
+        <div className="flex flex-col gap-1">
+           <label className="text-xs text-[#5f5e5e]">Link Tujuan</label>
+           <Input value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="Contoh: /layanan" className="text-sm h-8" />
+        </div>
+        <div className="flex flex-col gap-1">
+           <label className="text-xs text-[#5f5e5e]">Icon (Nama Lucide)</label>
+           <Input value={icon} onChange={e => setIcon(e.target.value)} placeholder="Contoh: Anchor, Users" className="text-sm h-8" />
+        </div>
+        <div className="flex items-center gap-2 col-span-2 pt-2">
+           <input type="checkbox" id={`highlight-${stat._id}`} checked={highlight} onChange={e => setHighlight(e.target.checked)} className="rounded border-slate-300 text-[#001e40] focus:ring-[#001e40]" />
+           <label htmlFor={`highlight-${stat._id}`} className="text-xs text-[#5f5e5e] cursor-pointer">Gunakan gaya highlight warna gelap</label>
+        </div>
+      </div>
+      <div className="flex items-center justify-between pt-3">
+        <Button size="sm" onClick={handleSave} className="h-8 rounded bg-[#001e40] px-4 text-xs text-white hover:bg-[#001e40]/90">Simpan</Button>
+        <Button variant="ghost" size="sm" onClick={() => {
+           onDelete({ id: stat._id })
+             .then(() => toast({ title: "Statistik dihapus" }))
+             .catch(() => toast({ title: "Gagal menghapus statistik", variant: "destructive" }));
+        }} className="h-8 gap-1 p-0 text-[#ba1a1a] hover:bg-transparent hover:text-[#ba1a1a]">
+           <img src="/figmaAssets/container-1.svg" alt="" className="shrink-0" />
+           <span className="text-xs">Hapus</span>
+        </Button>
+      </div>
+    </div>
+  )
+});
+
+const fallbackStats = [
+  { icon: "Anchor", value: "350+", label: "Nelayan Terdaftar", highlight: false, displayOrder: 0, isActive: true, linkUrl: "#" },
+  { icon: "Fish", value: "3", label: "Pembudidaya Ikan", highlight: false, displayOrder: 1, isActive: true, linkUrl: "#" },
+  { icon: "Ship", value: "928", label: "Unit Perikanan", highlight: false, displayOrder: 2, isActive: true, linkUrl: "#" },
+  { icon: "Sailboat", value: "142", label: "Kapal Terverifikasi", highlight: false, displayOrder: 3, isActive: true, linkUrl: "#" },
+  { icon: "ShieldCheck", value: "19", label: "Pokmaswas Aktif", highlight: false, displayOrder: 4, isActive: true, linkUrl: "#" },
+  { icon: "TreePine", value: "5.7", label: "Luas Mangrove (Ha)", highlight: false, displayOrder: 5, isActive: true, linkUrl: "#" },
+  { icon: "Waves", value: "2.3", label: "Terumbu Karang (Ha)", highlight: false, displayOrder: 6, isActive: true, linkUrl: "#" },
+  { icon: "MapPin", value: "25", label: "Titik Penyu", highlight: false, displayOrder: 7, isActive: true, linkUrl: "#" },
+  { icon: "Users", value: "785", label: "Masyarakat Terlayani", highlight: false, displayOrder: 8, isActive: true, linkUrl: "#" },
+  { icon: "TrendingUp", value: "95.12%", label: "Survey Kepuasan", highlight: true, displayOrder: 9, isActive: true, linkUrl: "#" },
+];
 
 export default function StatistikLayananPage() {
   const { toast } = useToast();
-  const rawData = useConvexQuery(api.guestbook.list) || [];
-  const [timeRange, setTimeRange] = useState("30");
+  const editorRefs = useRef<Map<string, any>>(new Map());
+  
+  const apiStats = useConvexQuery(api.stats.list);
+  const updateStat = useConvexMutation(api.stats.update);
+  const createStat = useConvexMutation(api.stats.create);
+  const deleteStat = useConvexMutation(api.stats.remove);
+  const stats = apiStats ?? [];
+  const activeStatsCount = stats.filter(s => s.isActive).length;
 
-  // Chart data calculation
-  const chartData = useMemo(() => {
-    // Basic formatting for chart - assuming data format "DD Bulan YYYY HH:mm"
-    // Since we don't have real Date objects in DB easily parsing them all, 
-    // let's just group by the date string portion (e.g., "05 Mei 2026").
-    const dateCounts: Record<string, number> = {};
-    
-    rawData.forEach(item => {
-      // Get just the date part, ignore time if any
-      const dateStr = (item.tanggal || "").split(" ").slice(0, 3).join(" ");
-      if (dateStr) {
-        dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
+  const handleLoadDummy = async () => {
+    try {
+      for (const stat of fallbackStats) {
+        await createStat(stat);
       }
-    });
-
-    // Convert to array
-    const sortedData = Object.keys(dateCounts).map(date => ({
-      name: date,
-      Kunjungan: dateCounts[date]
-    }));
-
-    // If we have no data, provide a nice empty chart
-    if (sortedData.length === 0) {
-      return [
-        { name: "Min 5", Kunjungan: 0 },
-        { name: "Sel 7", Kunjungan: 0 },
-        { name: "Kam 9", Kunjungan: 0 },
-        { name: "Sab 11", Kunjungan: 0 },
-      ];
+      toast({ title: "Data bawaan berhasil dimuat" });
+    } catch {
+      toast({ title: "Gagal memuat data", variant: "destructive" });
     }
+  };
 
-    return sortedData;
-  }, [rawData]);
-
-  const handleExportPDF = () => {
-    if (rawData.length === 0) {
-      toast({ title: "Tidak ada data untuk diekspor", variant: "destructive" });
-      return;
+  const handleSimpanSemua = async () => {
+    try {
+      const promises = Array.from(editorRefs.current.values()).map(ref => ref.save());
+      await Promise.all(promises);
+      toast({ title: "Semua perubahan berhasil disimpan secara massal!" });
+    } catch {
+      toast({ title: "Beberapa perubahan gagal disimpan", variant: "destructive" });
     }
-    const doc = new jsPDF();
-    doc.text("Laporan Statistik Layanan Tamu", 14, 15);
-    const tableColumn = ["No", "Nama Pengunjung", "Instansi / Pekerjaan", "Tanggal", "Status Layanan"];
-    const tableRows: any[] = [];
-    
-    rawData.forEach((item, index) => {
-      const row = [
-        index + 1,
-        item.nama,
-        item.pekerjaan || "-",
-        item.tanggal,
-        item.status
-      ];
-      tableRows.push(row);
-    });
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 20,
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [0, 30, 64] }
-    });
-
-    doc.save(`Statistik_Layanan_Tamu.pdf`);
-    toast({ title: "PDF berhasil diekspor" });
   };
 
   return (
     <AdminLayout>
-      <header className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <header className="mb-10 flex items-end justify-between">
         <div>
-          <Badge className="mb-3 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-200">
-            LIVE DATA
-          </Badge>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#001e40] [font-family:'Public_Sans',Helvetica]">
-            Statistik Layanan Tamu
+          <h1 className="text-base font-normal text-[#001e40] [font-family:'Public_Sans',Helvetica]">
+            Statistik Layanan
           </h1>
-          <p className="mt-2 text-sm sm:text-base text-[#5f5e5e] [font-family:'Inter',Helvetica] max-w-2xl">
-            Daftar kunjungan terbaru yang terintegrasi secara real-time dengan sistem administrasi terpadu.
+          <p className="mt-1 text-base text-[#5f5e5e] [font-family:'Inter',Helvetica]">
+            Kelola data statistik capaian dan jangkauan layanan yang tampil di halaman utama.
           </p>
         </div>
         <Button
-          onClick={handleExportPDF}
-          className="h-auto rounded-lg bg-[#001e40] px-6 py-2.5 shadow-[0px_1px_2px_#0000000d] hover:bg-[#001e40]/90 [font-family:'Public_Sans',Helvetica] text-sm text-white"
+          onClick={handleSimpanSemua}
+          className="h-auto rounded-lg bg-[#001e40] px-10 py-2.5 shadow-[0px_1px_2px_#0000000d] hover:bg-[#001e40]/90 [font-family:'Public_Sans',Helvetica] text-sm text-white"
         >
-          <Download className="mr-2 h-4 w-4" />
-          Export PDF
+          <img src="/figmaAssets/container-13.svg" alt="" className="mr-2 shrink-0" />
+          Simpan Semua
         </Button>
       </header>
 
-      <div className="flex flex-col gap-6">
-        {/* Chart Section */}
-        <Card className="rounded-xl border border-[#c3c6d1] bg-white shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-lg font-bold text-[#001e40]">
-                <TrendingUp className="h-5 w-5 text-blue-500" />
-                Tren Kunjungan
-              </CardTitle>
-              <p className="text-sm text-slate-500 mt-1">
-                Menampilkan {timeRange} hari terakhir
-              </p>
-            </div>
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-[180px] text-sm">
-                <SelectValue placeholder="Pilih rentang waktu" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">7 hari terakhir</SelectItem>
-                <SelectItem value="30">30 hari terakhir</SelectItem>
-                <SelectItem value="90">90 hari terakhir</SelectItem>
-              </SelectContent>
-            </Select>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full mt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorKunjungan" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: '#64748b' }} 
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: '#64748b' }} 
-                  />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="Kunjungan" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorKunjungan)" 
-                    activeDot={{ r: 6, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+      <section className="grid grid-cols-12 gap-6">
+        <div className="col-[1_/_13] flex flex-col gap-6">
+          <Card className="rounded-xl border border-[#c3c6d1] bg-white shadow-[0px_1px_2px_#0000000d]">
+            <CardContent className="flex flex-col gap-6 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-normal text-[#001e40] [font-family:'Public_Sans',Helvetica]">
+                    Manajemen Jangkauan Layanan
+                  </h2>
+                  <p className="text-xs text-[#5f5e5e] mt-1">
+                    Atur statistik yang akan dimunculkan. Gunakan tautan valid jika ingin mengarahkan pengguna ke halaman lain saat di klik.
+                  </p>
+                </div>
+                <Badge className="rounded-full bg-[#c6e7ff] px-3 py-1 text-xs font-normal tracking-[0.6px] text-[#001e2d] hover:bg-[#c6e7ff]">
+                  AKTIF: {activeStatsCount} DATA
+                </Badge>
+              </div>
 
-        {/* Table Section */}
-        <Card className="rounded-xl border border-[#c3c6d1] bg-white shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4 font-semibold text-[#001e40]">Nama Pengunjung</th>
-                  <th className="px-6 py-4 font-semibold text-[#001e40]">Instansi / Pekerjaan</th>
-                  <th className="px-6 py-4 font-semibold text-[#001e40]">Tanggal</th>
-                  <th className="px-6 py-4 font-semibold text-[#001e40]">Status Layanan</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rawData.length > 0 ? (
-                  rawData.map((item) => (
-                    <tr key={item._id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-[#1e293b]">
-                        {item.nama}
-                      </td>
-                      <td className="px-6 py-4 text-slate-500">
-                        {item.pekerjaan || "-"}
-                      </td>
-                      <td className="px-6 py-4 text-slate-500">
-                        {item.tanggal}
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge 
-                          className={`rounded-full font-medium shadow-none hover:bg-opacity-80 ${statusStyle[item.status] || "bg-slate-100"}`}
-                        >
-                          {item.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
-                      Belum ada data kunjungan.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      </div>
+              {apiStats === undefined ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="h-48 animate-pulse rounded-lg bg-slate-100" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {stats.length === 0 && (
+                    <div className="col-[1_/_span_1] lg:col-[1_/_span_2] xl:col-[1_/_span_3] flex flex-col items-center justify-center py-12 bg-slate-50 rounded-xl border-2 border-dashed border-slate-300">
+                      <p className="text-sm text-slate-500 mb-4 text-center">
+                        Basis data statistik Anda masih kosong.<br/>Klik tombol di bawah ini untuk memuat seluruh 10 data statistik bawaan (dummy).
+                      </p>
+                      <Button onClick={handleLoadDummy} className="bg-[#001e40] text-white hover:bg-[#001e40]/90">
+                        Muat 10 Data Bawaan (Dummy)
+                      </Button>
+                    </div>
+                  )}
+
+                  <AnimatePresence mode="popLayout">
+                    {stats.map((stat, i) => (
+                      <motion.div
+                        key={stat._id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <StatEditor
+                          ref={(el) => {
+                            if (el) {
+                              editorRefs.current.set(stat._id, el);
+                            } else {
+                              editorRefs.current.delete(stat._id);
+                            }
+                          }}
+                          stat={stat}
+                          onDelete={deleteStat}
+                          onUpdate={updateStat}
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                       createStat({
+                         value: "0",
+                         label: "Statistik Baru",
+                         linkUrl: "#",
+                         icon: "Circle",
+                         highlight: false,
+                         displayOrder: stats.length,
+                         isActive: true,
+                       }).then(() => toast({ title: "Statistik ditambahkan" }))
+                         .catch(() => toast({ title: "Gagal menambah statistik", variant: "destructive" }));
+                    }}
+                    className="h-auto w-full flex-col justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 py-12 text-[#5f5e5e] hover:bg-slate-50"
+                  >
+                    <LucideIcons.PlusCircle className="h-6 w-6 text-slate-400" />
+                    <span className="text-sm">Tambah Data Statistik</span>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
     </AdminLayout>
   );
 }

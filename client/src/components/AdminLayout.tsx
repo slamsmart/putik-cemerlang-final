@@ -28,6 +28,11 @@ const primaryNavItems = [
     icon: "/figmaAssets/container-12.svg",
     href: "/admin/statistik-layanan",
   },
+  {
+    label: "Statistik Pengunjung",
+    icon: "/figmaAssets/container-12.svg", // Reusing icon or should I use a different one? Let's reuse.
+    href: "/admin/statistik-pengunjung",
+  },
 ];
 
 const secondaryNavItems = [
