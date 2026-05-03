@@ -1,35 +1,38 @@
 {
-  "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist/public",
-  "installCommand": "npm install",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist/public" }
-    },
-    {
-      "src": "dist/index.cjs",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "dist/index.cjs"
-    },
-    {
-      "src": "/uploads/(.*)",
-      "dest": "dist/index.cjs"
-    },
-    {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|svg|ico|webp|ttf|woff|woff2|json|webmanifest))",
-      "dest": "/dist/public/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "dist/index.cjs"
-    }
-  ]
+    "version":  2,
+    "buildCommand":  "npm run build",
+    "outputDirectory":  "dist/public",
+    "installCommand":  "npm install",
+    "builds":  [
+                   {
+                       "src":  "package.json",
+                       "use":  "@vercel/static-build",
+                       "config":  {
+                                      "distDir":  "dist/public"
+                                  }
+                   },
+                   {
+                       "src":  "dist/index.cjs",
+                       "use":  "@vercel/node"
+                   }
+               ],
+    "routes":  [
+                   {
+                       "src":  "/api/(.*)",
+                       "dest":  "dist/index.cjs"
+                   },
+                   {
+                       "src":  "/uploads/(.*)",
+                       "dest":  "dist/index.cjs"
+                   },
+                   {
+                       "src":  "/(.*\\.(js|css|png|jpg|jpeg|svg|ico|webp|ttf|woff|woff2|json|webmanifest))",
+                       "dest":  "/dist/public/$1"
+                   },
+                   {
+                       "src":  "/(.*)",
+                       "dest":  "dist/index.cjs"
+                   }
+               ],
+    "name":  "putik-cemerlang"
 }
