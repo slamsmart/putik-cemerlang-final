@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -9,10 +9,31 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
 });
 
+export const sliders = pgTable("sliders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  subtitle: text("subtitle").notNull().default(""),
+  ctaText: text("cta_text").notNull().default(""),
+  ctaLink: text("cta_link").notNull().default("/"),
+  imageUrl: text("image_url").notNull().default(""),
+  displayOrder: integer("display_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
 });
 
+export const insertSliderSchema = createInsertSchema(sliders).omit({
+  id: true,
+});
+
+export const updateSliderSchema = insertSliderSchema.partial();
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export type InsertSlider = z.infer<typeof insertSliderSchema>;
+export type UpdateSlider = z.infer<typeof updateSliderSchema>;
+export type Slider = typeof sliders.$inferSelect;
