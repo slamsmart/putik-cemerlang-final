@@ -28,6 +28,9 @@ import { useToast } from "@/hooks/use-toast";
 export default function BukuTamuPublicPage() {
   const [, setLocation] = useLocation();
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreeAntiGratifikasi, setAgreeAntiGratifikasi] = useState(false);
   const { toast } = useToast();
   const createGuestbook = useConvexMutation(api.guestbook.create);
 
@@ -46,24 +49,35 @@ export default function BukuTamuPublicPage() {
       toast({ title: "Mohon lengkapi semua field wajib", variant: "destructive" });
       return;
     }
-    
+    if (!agreeTerms) {
+      toast({ title: "Harap centang persetujuan Kebijakan Privasi", variant: "destructive" });
+      return;
+    }
+    if (!agreeAntiGratifikasi) {
+      toast({ title: "Harap centang pernyataan Anti Gratifikasi", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
     try {
       const today = new Date(formData.tanggal);
       const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
       const formattedDate = `${today.getDate().toString().padStart(2, '0')} ${months[today.getMonth()]} ${today.getFullYear()}`;
-      
+
       await createGuestbook({
         nama: formData.nama,
-        email: formData.nomor, // Using 'nomor' as contact in the schema
+        email: formData.nomor,
         pekerjaan: formData.instansi || formData.tujuan,
         pesan: formData.pesan,
         tanggal: formattedDate,
         status: "Belum Dibalas",
       });
       setIsSubmitted(true);
-      toast({ title: "Formulir berhasil dikirim!" });
+      toast({ title: "Formulir berhasil dikirim! Terima kasih.", description: "Silakan download Sertifikat Anti Gratifikasi Anda." });
     } catch (err) {
-      toast({ title: "Terjadi kesalahan", variant: "destructive" });
+      toast({ title: "Terjadi kesalahan. Coba lagi.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -96,7 +110,7 @@ export default function BukuTamuPublicPage() {
         doc.addFont("Cinzel-Medium.ttf", "Cinzel", "normal");
         cinzelLoaded = true;
       }
-    } catch (_) {}
+    } catch (_) { }
 
     const generateContent = () => {
       // Nama pengunjung — Cinzel Medium size 33
@@ -181,7 +195,7 @@ export default function BukuTamuPublicPage() {
               </div>
               <h1 className="font-['Public_Sans',Helvetica] text-5xl font-bold text-[#001e40] mb-6 tracking-tight">Buku Tamu Layanan</h1>
               <p className="text-lg text-[#43474f] max-w-2xl leading-relaxed">
-                Selamat datang di Pusat Informasi Kami. Silakan isi formulir kunjungan Anda untuk dokumentasi dan peningkatan kualitas layanan.
+                Selamat datang di Portal Resmi Informasi Kami. Silakan isi formulir kunjungan Anda untuk dokumentasi dan peningkatan kualitas layanan.
               </p>
             </div>
             <div className="lg:col-span-5 relative mt-8 lg:mt-0">
@@ -250,14 +264,14 @@ export default function BukuTamuPublicPage() {
                       <label className="text-sm font-medium text-[#191c1e]">Nama Lengkap *</label>
                       <div className="relative">
                         <User className="w-5 h-5 absolute left-3 top-3 text-[#737780]" />
-                        <input id="input-nama" className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all" placeholder="Masukkan nama sesuai KTP" type="text" value={formData.nama} onChange={(e) => setFormData({...formData, nama: e.target.value})} required />
+                        <input id="input-nama" className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all" placeholder="Masukkan nama sesuai KTP" type="text" value={formData.nama} onChange={(e) => setFormData({ ...formData, nama: e.target.value })} required />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-[#191c1e]">Nomor Kontak / WhatsApp *</label>
                       <div className="relative">
                         <Phone className="w-5 h-5 absolute left-3 top-3 text-[#737780]" />
-                        <input className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all" placeholder="0812xxxx" type="tel" value={formData.nomor} onChange={(e) => setFormData({...formData, nomor: e.target.value})} required />
+                        <input className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all" placeholder="0812xxxx" type="tel" value={formData.nomor} onChange={(e) => setFormData({ ...formData, nomor: e.target.value })} required />
                       </div>
                     </div>
                   </div>
@@ -266,20 +280,20 @@ export default function BukuTamuPublicPage() {
                       <label className="text-sm font-medium text-[#191c1e]">Instansi / Organisasi</label>
                       <div className="relative">
                         <Building2 className="w-5 h-5 absolute left-3 top-3 text-[#737780]" />
-                        <input className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all" placeholder="Nama instansi (opsional)" type="text" value={formData.instansi} onChange={(e) => setFormData({...formData, instansi: e.target.value})} />
+                        <input className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all" placeholder="Nama instansi (opsional)" type="text" value={formData.instansi} onChange={(e) => setFormData({ ...formData, instansi: e.target.value })} />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-[#191c1e]">Tanggal Kunjungan *</label>
                       <div className="relative">
                         <Calendar className="w-5 h-5 absolute left-3 top-3 text-[#737780]" />
-                        <input className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all" type="date" value={formData.tanggal} onChange={(e) => setFormData({...formData, tanggal: e.target.value})} required />
+                        <input className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all" type="date" value={formData.tanggal} onChange={(e) => setFormData({ ...formData, tanggal: e.target.value })} required />
                       </div>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-[#191c1e]">Tujuan Kunjungan *</label>
-                    <select className="w-full px-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all appearance-none bg-no-repeat bg-[right_1rem_center]" style={{ backgroundImage: "url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23737780%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')" }} value={formData.tujuan} onChange={(e) => setFormData({...formData, tujuan: e.target.value})} required>
+                    <select className="w-full px-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all appearance-none bg-no-repeat bg-[right_1rem_center]" style={{ backgroundImage: "url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23737780%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')" }} value={formData.tujuan} onChange={(e) => setFormData({ ...formData, tujuan: e.target.value })} required>
                       <option value="">Pilih Tujuan</option>
                       <option>Konsultasi Data Kemaritiman</option>
                       <option>Koordinasi Instansi</option>
@@ -290,35 +304,78 @@ export default function BukuTamuPublicPage() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-[#191c1e]">Pesan / Keterangan Tambahan *</label>
-                    <textarea className="w-full px-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all" placeholder="Tuliskan pesan atau maksud detail kedatangan Anda..." rows={4} value={formData.pesan} onChange={(e) => setFormData({...formData, pesan: e.target.value})} required></textarea>
+                    <textarea className="w-full px-4 py-3 rounded-lg border border-[#c3c6d1] focus:border-[#001e40] focus:ring-1 focus:ring-[#001e40] outline-none transition-all" placeholder="Tuliskan pesan atau maksud detail kedatangan Anda..." rows={4} value={formData.pesan} onChange={(e) => setFormData({ ...formData, pesan: e.target.value })} required></textarea>
                   </div>
                   <div className="flex flex-col gap-3">
-                    <div className="flex items-start gap-3 p-4 bg-[#f2f4f6] rounded-lg border border-[#c3c6d1]/30">
-                      <input className="mt-1 rounded border-[#737780] text-[#001e40] focus:ring-[#001e40]" id="terms" type="checkbox" />
-                      <label className="text-sm text-[#43474f]" htmlFor="terms">
-                        Saya menyatakan bahwa data yang saya masukkan adalah benar dan dapat dipertanggungjawabkan. Saya setuju data ini digunakan untuk kepentingan administrasi sesuai dengan <a className="text-[#003366] font-semibold underline" href="#">Kebijakan Privasi</a>.
+                    <div className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${agreeTerms ? 'bg-blue-50 border-[#003366]/40' : 'bg-[#f2f4f6] border-[#c3c6d1]/30'}`}>
+                      <input
+                        className="mt-1 w-4 h-4 rounded border-[#737780] text-[#001e40] focus:ring-[#001e40] cursor-pointer"
+                        id="terms"
+                        type="checkbox"
+                        checked={agreeTerms}
+                        onChange={(e) => setAgreeTerms(e.target.checked)}
+                      />
+                      <label className="text-sm text-[#43474f] cursor-pointer" htmlFor="terms">
+                        Saya menyatakan bahwa data yang saya masukkan adalah benar dan dapat dipertanggungjawabkan. Saya setuju data ini digunakan untuk kepentingan administrasi sesuai dengan <a className="text-[#003366] font-semibold underline" href="#">Kebijakan Privasi</a>. <span className="text-red-500 font-bold">*</span>
                       </label>
                     </div>
-                    <div className="flex items-start gap-3 p-4 bg-[#f2f4f6] rounded-lg border border-[#c3c6d1]/30">
-                      <input className="mt-1 rounded border-[#737780] text-[#001e40] focus:ring-[#001e40]" id="anti-gratifikasi" type="checkbox" />
-                      <label className="text-sm text-[#43474f]" htmlFor="anti-gratifikasi">
-                        Saya mendukung anti gratifikasi dan layanan yang telah diberikan adalah gratis serta bebas dari korupsi.
+                    <div className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${agreeAntiGratifikasi ? 'bg-green-50 border-green-500/40' : 'bg-[#f2f4f6] border-[#c3c6d1]/30'}`}>
+                      <input
+                        className="mt-1 w-4 h-4 rounded border-[#737780] text-[#001e40] focus:ring-[#001e40] cursor-pointer"
+                        id="anti-gratifikasi"
+                        type="checkbox"
+                        checked={agreeAntiGratifikasi}
+                        onChange={(e) => setAgreeAntiGratifikasi(e.target.checked)}
+                      />
+                      <label className="text-sm text-[#43474f] cursor-pointer" htmlFor="anti-gratifikasi">
+                        <span className="font-semibold text-green-700">Pernyataan Anti Gratifikasi:</span> Saya mendukung anti gratifikasi dan layanan yang telah diberikan adalah gratis serta bebas dari korupsi, kolusi, dan nepotisme. <span className="text-red-500 font-bold">*</span>
                       </label>
                     </div>
                   </div>
                   <div className="flex flex-col md:flex-row gap-4 pt-4">
                     {!isSubmitted ? (
-                      <button type="submit" className="flex-1 bg-[#001e40] text-white font-semibold py-4 rounded-lg shadow-md hover:bg-[#003366] hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2">
-                        <Send className="w-5 h-5" />
-                        Kirim Data
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="flex-1 bg-[#001e40] text-white font-semibold py-4 rounded-lg shadow-md hover:bg-[#003366] hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? (
+                          <>
+                            <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                            Mengirim...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-5 h-5" />
+                            Kirim Data
+                          </>
+                        )}
                       </button>
                     ) : (
-                      <button onClick={handleDownloadSertifikat} className="flex-1 bg-green-600 text-white font-semibold py-4 rounded-lg shadow-md hover:bg-green-700 hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2" type="button">
-                        <ShieldCheck className="w-5 h-5" />
-                        Download Sertifikat Anti Gratifikasi
-                      </button>
+                      <>
+                        <button
+                          onClick={handleDownloadSertifikat}
+                          className="flex-1 bg-green-600 text-white font-semibold py-4 rounded-lg shadow-md hover:bg-green-700 hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2"
+                          type="button"
+                        >
+                          <ShieldCheck className="w-5 h-5" />
+                          Download Sertifikat Anti Gratifikasi
+                        </button>
+                        <div className="flex-1 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
+                          <ShieldCheck className="w-5 h-5 text-green-600 shrink-0" />
+                          <p className="text-sm text-green-700 font-medium">Data berhasil dikirim! Terima kasih atas kunjungan Anda.</p>
+                        </div>
+                      </>
                     )}
-                    <button className="px-8 py-4 border border-[#c3c6d1] text-[#5f5e5e] font-semibold rounded-lg hover:bg-[#eceef0] transition-all" type="reset" onClick={() => setIsSubmitted(false)}>
+                    <button
+                      className="px-8 py-4 border border-[#c3c6d1] text-[#5f5e5e] font-semibold rounded-lg hover:bg-[#eceef0] transition-all"
+                      type="reset"
+                      onClick={() => {
+                        setIsSubmitted(false);
+                        setAgreeTerms(false);
+                        setAgreeAntiGratifikasi(false);
+                      }}
+                    >
                       Bersihkan Form
                     </button>
                   </div>
