@@ -95,16 +95,19 @@ export default function LandingPage() {
               <DropdownMenuTrigger className="flex items-center gap-1 font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight text-slate-600 transition-colors hover:text-blue-900 focus:outline-none">
                 Pengaduan <ChevronDown className="h-3 w-3" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="min-w-[220px]">
-                <DropdownMenuItem className="cursor-pointer" onSelect={() => setLocation("/pengaduan-masyarakat")}>
+              <DropdownMenuContent align="start" sideOffset={8} className="min-w-[240px] rounded-xl border border-slate-200 bg-white shadow-lg p-1">
+                <DropdownMenuItem className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900" onSelect={() => setLocation("/pengaduan-masyarakat")}>
                   Pengaduan Masyarakat
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer" onSelect={() => setLocation("/whistle-blowing")}>
+                <DropdownMenuItem className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900" onSelect={() => setLocation("/whistle-blowing")}>
                   Whistle Blowing System
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900" onSelect={() => setLocation("/pelaporan-gratifikasi")}>
+                  Pelaporan Gratifikasi
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <a href="#kontak" className="font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight text-slate-600 dark:text-slate-400 hover:text-blue-900 dark:hover:text-white transition-colors">Kontak</a>
+            <Link href="/kontak"><a className="font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight text-slate-600 dark:text-slate-400 hover:text-blue-900 dark:hover:text-white transition-colors">Kontak</a></Link>
             <Link href="/admin">
               <button className="bg-[#003366] text-white font-['Public_Sans',Helvetica] font-semibold px-6 py-3 rounded-lg hover:opacity-90 active:opacity-80 transition-all">
                 Akses Admin

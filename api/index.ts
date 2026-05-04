@@ -440,6 +440,68 @@ app.delete("/api/whistle-blowing/:id", async (req: Request, res: Response) => {
   }
 });
 
+// ── Pelaporan Gratifikasi (Convex proxy) ─────────────────────────────────────
+app.get("/api/pelaporan-gratifikasi", async (_req: Request, res: Response) => {
+  try {
+    const data = await convexQuery("gratifikasi:list");
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to fetch" });
+  }
+});
+
+app.post("/api/pelaporan-gratifikasi", async (req: Request, res: Response) => {
+  try {
+    const {
+      nama, nip, jabatan, unitKerja, telepon, email,
+      tanggalPenerimaan, jenisGratifikasi, nilaiGratifikasi,
+      pemberGratifikasi, hubunganPemberi, kronologi,
+      imageUrl, isAnonymous, status,
+    } = req.body;
+    const args: Record<string, unknown> = {
+      nama: nama || "",
+      jabatan: jabatan || "",
+      unitKerja: unitKerja || "",
+      telepon: telepon || "",
+      email: email || "",
+      tanggalPenerimaan: tanggalPenerimaan || "",
+      jenisGratifikasi: jenisGratifikasi || "",
+      nilaiGratifikasi: nilaiGratifikasi || "",
+      pemberGratifikasi: pemberGratifikasi || "",
+      hubunganPemberi: hubunganPemberi || "",
+      kronologi: kronologi || "",
+      isAnonymous: !!isAnonymous,
+      status: status || "Baru",
+    };
+    if (nip && typeof nip === "string" && nip.trim()) args.nip = nip.trim();
+    if (imageUrl && typeof imageUrl === "string" && imageUrl.trim()) args.imageUrl = imageUrl.trim();
+    console.log("[pelaporan-gratifikasi] creating:", JSON.stringify(args));
+    const data = await convexMutation("gratifikasi:create", args);
+    res.status(201).json(data);
+  } catch (e: any) {
+    console.error("[pelaporan-gratifikasi] error:", e?.message);
+    res.status(500).json({ message: e?.message || "Failed to create" });
+  }
+});
+
+app.patch("/api/pelaporan-gratifikasi/:id/status", async (req: Request, res: Response) => {
+  try {
+    await convexMutation("gratifikasi:updateStatus", { id: req.params.id, status: req.body.status });
+    res.status(204).end();
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to update" });
+  }
+});
+
+app.delete("/api/pelaporan-gratifikasi/:id", async (req: Request, res: Response) => {
+  try {
+    await convexMutation("gratifikasi:remove", { id: req.params.id });
+    res.status(204).end();
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to delete" });
+  }
+});
+
 // ── Error handler ─────────────────────────────────────────────────────────────
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || err.statusCode || 500;

@@ -21,6 +21,9 @@ import PengaduanMasyarakatAdminPage from "@/pages/PengaduanMasyarakatAdminPage";
 import WhistleBlowingAdminPage from "@/pages/WhistleBlowingAdminPage";
 import StatistikLayananPage from "@/pages/StatistikLayananPage";
 import StatistikPengunjungPage from "@/pages/StatistikPengunjungPage";
+import PelaporanGratifikasiPage from "@/pages/PelaporanGratifikasiPage";
+import GratifikasiAdminPage from "@/pages/GratifikasiAdminPage";
+import KontakPage from "@/pages/KontakPage";
 
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || "https://mellow-gerbil-927.convex.cloud";
 const convex = new ConvexReactClient(CONVEX_URL);
@@ -51,6 +54,9 @@ function Router() {
       <Route path="/admin/whistle-blowing" component={() => <ProtectedRoute component={WhistleBlowingAdminPage} />} />
       <Route path="/pengaduan-masyarakat" component={PengaduanMasyarakatPage} />
       <Route path="/whistle-blowing" component={WhistleBlowingPage} />
+      <Route path="/pelaporan-gratifikasi" component={PelaporanGratifikasiPage} />
+      <Route path="/kontak" component={KontakPage} />
+      <Route path="/admin/pelaporan-gratifikasi" component={() => <ProtectedRoute component={GratifikasiAdminPage} />} />
       <Route component={NotFound} />
     </Switch>
   );

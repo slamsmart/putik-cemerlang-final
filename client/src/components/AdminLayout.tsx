@@ -31,6 +31,11 @@ const primaryNavItems = [
     href: "/admin/whistle-blowing",
   },
   {
+    label: "Laporan Gratifikasi",
+    icon: "/figmaAssets/container-4.svg",
+    href: "/admin/pelaporan-gratifikasi",
+  },
+  {
     label: "Konten & Slider",
     icon: "/figmaAssets/container-2.svg",
     href: "/admin/konten-slider",

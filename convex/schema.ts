@@ -71,4 +71,23 @@ export default defineSchema({
     status: v.union(v.literal("Baru"), v.literal("Diproses"), v.literal("Selesai")),
     createdAt: v.number(),
   }).index("by_created", ["createdAt"]).index("by_status", ["status"]),
+
+  pelaporanGratifikasi: defineTable({
+    nama: v.string(),
+    nip: v.optional(v.string()),
+    jabatan: v.string(),
+    unitKerja: v.string(),
+    telepon: v.string(),
+    email: v.string(),
+    tanggalPenerimaan: v.string(),
+    jenisGratifikasi: v.string(),
+    nilaiGratifikasi: v.string(),
+    pemberGratifikasi: v.string(),
+    hubunganPemberi: v.string(),
+    kronologi: v.string(),
+    imageUrl: v.optional(v.string()),
+    isAnonymous: v.boolean(),
+    status: v.union(v.literal("Baru"), v.literal("Diproses"), v.literal("Selesai")),
+    createdAt: v.number(),
+  }).index("by_created", ["createdAt"]).index("by_status", ["status"]),
 });
