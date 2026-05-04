@@ -1,6 +1,21 @@
 pipelines:
+  branches:
+    main:
+      - step:
+          name: Deploy to Production
+          deployment: production
+          script:
+            - echo "Deploying to Production..."
+            - npm install
+            - npm run build
+            # If using Vercel CLI for deployment:
+            # - npx vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+            # - npx vercel build --prod --token=$VERCEL_TOKEN
+            # - npx vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
   default:
     - step:
+        name: Build and Test
         script:
-          - echo "Deploying..."
-          - curl -H "Authorization: Bearer $API_KEY" https://example.com
+          - echo "Running tests and build for non-main branches..."
+          - npm install
+          - npm run build
