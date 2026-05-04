@@ -10,7 +10,7 @@ const app = express();
 const uploadsDir = path.join("/tmp", "uploads");
 try {
   if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-} catch {}
+} catch { }
 app.use("/uploads", express.static(uploadsDir));
 
 app.use(express.json());
@@ -69,32 +69,52 @@ function saveLocal(buffer: Buffer, originalName: string): string {
   return `/uploads/${name}`;
 }
 
+// ── Cloudinary helper ─────────────────────────────────────────────────────────
+function isCloudinaryConfigured() {
+  return (
+    (process.env.CLOUDINARY_CLOUD_NAME || "").trim() &&
+    (process.env.CLOUDINARY_API_KEY || "").trim() &&
+    (process.env.CLOUDINARY_API_SECRET || "").trim()
+  );
+}
+
+async function getCloudinary() {
+  const { v2: cloudinary } = await import("cloudinary");
+  cloudinary.config({
+    cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || "").trim(),
+    api_key: (process.env.CLOUDINARY_API_KEY || "").trim(),
+    api_secret: (process.env.CLOUDINARY_API_SECRET || "").trim(),
+  });
+  return cloudinary;
+}
+
+// ── Debug (hapus setelah env vars terkonfirmasi) ──────────────────────────────
+app.get("/api/debug-env", (_req: Request, res: Response) => {
+  res.json({
+    cloudinary_name: !!process.env.CLOUDINARY_CLOUD_NAME,
+    cloudinary_key: !!process.env.CLOUDINARY_API_KEY,
+    cloudinary_secret: !!process.env.CLOUDINARY_API_SECRET,
+    convex_url: !!process.env.CONVEX_URL,
+    node_env: process.env.NODE_ENV,
+  });
+});
+
 // ── Image Upload ──────────────────────────────────────────────────────────────
 app.post("/api/upload", uploadImage.single("image"), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
-  const cloudinaryConfigured =
-    process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET;
-
-  if (cloudinaryConfigured) {
+  if (isCloudinaryConfigured()) {
     try {
-      const { v2: cloudinary } = await import("cloudinary");
-      cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
-      });
+      const cloudinary = await getCloudinary();
       const result = await new Promise<any>((resolve, reject) => {
         cloudinary.uploader.upload_stream(
-          { folder: "putik-cemerlang", resource_type: "image" },
+          { folder: "putik-cemerlang/sliders", format: "webp", quality: "auto" },
           (err, result) => (err ? reject(err) : resolve(result))
         ).end(req.file!.buffer);
       });
       return res.json({ url: result.secure_url });
     } catch (e: any) {
-      console.warn("Cloudinary failed, falling back to local:", e?.message);
+      console.warn("Cloudinary image upload failed, falling back to local:", e?.message);
     }
   }
 
@@ -110,29 +130,23 @@ app.post("/api/upload", uploadImage.single("image"), async (req: Request, res: R
 app.post("/api/upload-pdf", uploadPdf.single("file"), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
-  const cloudinaryConfigured =
-    (process.env.CLOUDINARY_CLOUD_NAME || "").trim() &&
-    (process.env.CLOUDINARY_API_KEY || "").trim() &&
-    (process.env.CLOUDINARY_API_SECRET || "").trim();
-
-  if (cloudinaryConfigured) {
+  if (isCloudinaryConfigured()) {
     try {
-      const { v2: cloudinary } = await import("cloudinary");
-      cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
-      });
+      const cloudinary = await getCloudinary();
       const isPdf = req.file.mimetype === "application/pdf";
       const result = await new Promise<any>((resolve, reject) => {
         cloudinary.uploader.upload_stream(
-          { folder: "putik-cemerlang-pdfs", resource_type: isPdf ? "raw" : "image" },
+          {
+            folder: "putik-cemerlang/arsip-surat",
+            resource_type: isPdf ? "raw" : "image",
+            public_id: `arsip_${Date.now()}`,
+          },
           (err, result) => (err ? reject(err) : resolve(result))
         ).end(req.file!.buffer);
       });
       return res.json({ url: result.secure_url });
     } catch (e: any) {
-      console.warn("Cloudinary PDF upload failed, falling back:", e?.message);
+      console.warn("Cloudinary PDF upload failed, falling back to local:", e?.message);
     }
   }
 
@@ -185,4 +199,5 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   if (!res.headersSent) res.status(status).json({ message });
 });
 
+// ── Vercel serverless handler ─────────────────────────────────────────────────
 export default app;
