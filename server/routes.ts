@@ -40,7 +40,7 @@ const uploadPdf = multer({
   },
 });
 
-export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
+export async function registerRoutes(httpServer: Server | null, app: Express): Promise<Server | null> {
   // ── Sliders ───────────────────────────────────────────────────────────────
 
   app.get("/api/sliders", async (_req, res: Response) => {
