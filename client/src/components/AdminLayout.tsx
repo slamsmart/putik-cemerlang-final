@@ -124,7 +124,7 @@ function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   <button
                     data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, "-").replace(/&/g, "").replace(/--/g, "-")}`}
                     type="button"
-                    className={`h-auto w-full flex items-center justify-start gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    className={`h-auto w-full flex items-center justify-start gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
                       isActive
                         ? "bg-blue-50 text-blue-900"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-700"
@@ -132,7 +132,7 @@ function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   >
                     <img className="shrink-0" alt="" aria-hidden="true" src={item.icon} />
                     <span
-                      className={`[font-family:'Inter',Helvetica] text-sm md:text-base leading-6 tracking-[0] ${
+                      className={`[font-family:'Inter',Helvetica] text-sm md:text-base leading-6 tracking-[0] text-left ${
                         isActive ? "font-bold" : "font-normal"
                       }`}
                     >
@@ -152,10 +152,10 @@ function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               <Link key={item.label} href={item.href}>
                 <button
                   type="button"
-                  className="h-auto w-full flex items-center justify-start gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                  className="h-auto w-full flex items-center justify-start gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-700 transition-colors text-left"
                 >
                   <img className="shrink-0" alt="" aria-hidden="true" src={item.icon} />
-                  <span className="[font-family:'Inter',Helvetica] text-sm md:text-base font-normal leading-6 tracking-[0]">
+                  <span className="[font-family:'Inter',Helvetica] text-sm md:text-base font-normal leading-6 tracking-[0] text-left">
                     {item.label}
                   </span>
                 </button>
@@ -165,10 +165,10 @@ function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               data-testid="button-logout"
               type="button"
               onClick={handleLogout}
-              className="h-auto w-full flex items-center justify-start gap-3 px-4 py-3 rounded-lg text-[#ba1a1a] hover:bg-red-50 transition-colors"
+              className="h-auto w-full flex items-center justify-start gap-3 px-4 py-3 rounded-lg text-[#ba1a1a] hover:bg-red-50 transition-colors text-left"
             >
               <img className="shrink-0" alt="" aria-hidden="true" src="/figmaAssets/container.svg" />
-              <span className="[font-family:'Inter',Helvetica] text-sm md:text-base font-normal leading-6 tracking-[0]">
+              <span className="[font-family:'Inter',Helvetica] text-sm md:text-base font-normal leading-6 tracking-[0] text-left">
                 Keluar
               </span>
             </button>
