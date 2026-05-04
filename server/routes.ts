@@ -7,13 +7,18 @@ import { randomBytes } from "crypto";
 import { storage } from "./storage";
 import { insertSliderSchema, updateSliderSchema, insertStatSchema, updateStatSchema } from "@shared/schema";
 
-const uploadsDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+function getUploadsDir() {
+  const isVercel = process.env.VERCEL || process.env.NODE_ENV === "production";
+  const dir = isVercel ? path.join("/tmp", "uploads") : path.join(process.cwd(), "uploads");
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
 
 function saveLocal(buffer: Buffer, originalName: string): string {
   const ext = path.extname(originalName) || ".bin";
   const name = `${Date.now()}-${randomBytes(4).toString("hex")}${ext}`;
-  fs.writeFileSync(path.join(uploadsDir, name), buffer);
+  const dir = getUploadsDir();
+  fs.writeFileSync(path.join(dir, name), buffer);
   return `/uploads/${name}`;
 }
 

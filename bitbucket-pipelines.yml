@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - echo "Deploying..."
+          - curl -H "Authorization: Bearer $API_KEY" https://example.com

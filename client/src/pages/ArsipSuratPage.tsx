@@ -227,6 +227,7 @@ export default function ArsipSuratPage() {
               {["Semua", "Masuk", "Keluar"].map((f) => (
                 <button
                   key={f}
+                  aria-pressed={filterJenis === f}
                   data-testid={`filter-jenis-${f.toLowerCase()}`}
                   onClick={() => setFilterJenis(f)}
                   className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
@@ -356,26 +357,26 @@ export default function ArsipSuratPage() {
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-[#5f5e5e]">Nomor Surat *</label>
-              <Input data-testid="input-nomor-surat" value={form.nomor} onChange={(e) => setForm((f) => ({ ...f, nomor: e.target.value }))} placeholder="001/KKP/V/2024" className="border-slate-200 text-sm" />
+              <label htmlFor="input-nomor" className="text-xs text-[#5f5e5e]">Nomor Surat *</label>
+              <Input id="input-nomor" required aria-required="true" data-testid="input-nomor-surat" value={form.nomor} onChange={(e) => setForm((f) => ({ ...f, nomor: e.target.value }))} placeholder="001/KKP/V/2024" className="border-slate-200 text-sm" />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-[#5f5e5e]">Perihal *</label>
-              <Input data-testid="input-perihal" value={form.perihal} onChange={(e) => setForm((f) => ({ ...f, perihal: e.target.value }))} placeholder="Perihal surat" className="border-slate-200 text-sm" />
+              <label htmlFor="input-perihal" className="text-xs text-[#5f5e5e]">Perihal *</label>
+              <Input id="input-perihal" required aria-required="true" data-testid="input-perihal" value={form.perihal} onChange={(e) => setForm((f) => ({ ...f, perihal: e.target.value }))} placeholder="Perihal surat" className="border-slate-200 text-sm" />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-[#5f5e5e]">Pengirim / Tujuan *</label>
-              <Input data-testid="input-pengirim" value={form.pengirimTujuan} onChange={(e) => setForm((f) => ({ ...f, pengirimTujuan: e.target.value }))} placeholder="Nama instansi / pengirim" className="border-slate-200 text-sm" />
+              <label htmlFor="input-pengirim" className="text-xs text-[#5f5e5e]">Pengirim / Tujuan *</label>
+              <Input id="input-pengirim" required aria-required="true" data-testid="input-pengirim" value={form.pengirimTujuan} onChange={(e) => setForm((f) => ({ ...f, pengirimTujuan: e.target.value }))} placeholder="Nama instansi / pengirim" className="border-slate-200 text-sm" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-[#5f5e5e]">Tanggal</label>
-                <Input data-testid="input-tanggal" type="date" value={form.tanggal} onChange={(e) => setForm((f) => ({ ...f, tanggal: e.target.value }))} className="border-slate-200 text-sm" />
+                <label htmlFor="input-tanggal" className="text-xs text-[#5f5e5e]">Tanggal</label>
+                <Input id="input-tanggal" data-testid="input-tanggal" type="date" value={form.tanggal} onChange={(e) => setForm((f) => ({ ...f, tanggal: e.target.value }))} className="border-slate-200 text-sm" />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-[#5f5e5e]">Jenis Surat</label>
+                <label htmlFor="select-jenis" className="text-xs text-[#5f5e5e]">Jenis Surat</label>
                 <Select value={form.jenis} onValueChange={(v) => setForm((f) => ({ ...f, jenis: v as Jenis }))}>
-                  <SelectTrigger data-testid="select-jenis" className="border-slate-200 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="select-jenis" data-testid="select-jenis" className="border-slate-200 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Masuk">Masuk</SelectItem>
                     <SelectItem value="Keluar">Keluar</SelectItem>
@@ -384,9 +385,9 @@ export default function ArsipSuratPage() {
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-[#5f5e5e]">Status</label>
+              <label htmlFor="select-status" className="text-xs text-[#5f5e5e]">Status</label>
               <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v as Status }))}>
-                <SelectTrigger data-testid="select-status" className="border-slate-200 text-sm"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="select-status" data-testid="select-status" className="border-slate-200 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Belum Dibaca">Belum Dibaca</SelectItem>
                   <SelectItem value="Terarsip">Terarsip</SelectItem>
@@ -395,8 +396,8 @@ export default function ArsipSuratPage() {
               </Select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-[#5f5e5e]">Upload Scan Surat (PDF/Gambar, maks. 20 MB)</label>
-              <input ref={fileRef} type="file" accept=".pdf,image/*" className="hidden" onChange={handleUploadPdf} />
+              <label htmlFor="upload-pdf" className="text-xs text-[#5f5e5e]">Upload Scan Surat (PDF/Gambar, maks. 20 MB)</label>
+              <input id="upload-pdf" ref={fileRef} type="file" accept=".pdf,image/*" className="hidden" onChange={handleUploadPdf} />
               <div className="flex items-center gap-3">
                 <Button data-testid="button-upload-pdf" type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="border-slate-200 text-xs">
                   {uploading ? "Mengunggah…" : "Pilih File"}

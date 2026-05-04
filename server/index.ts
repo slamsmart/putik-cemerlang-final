@@ -9,8 +9,13 @@ const app = express();
 const httpServer = createServer(app);
 
 // Serve uploaded files statically
-const uploadsDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+const isVercel = process.env.VERCEL || process.env.NODE_ENV === "production";
+const uploadsDir = isVercel ? path.join("/tmp", "uploads") : path.join(process.cwd(), "uploads");
+try {
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+} catch (err) {
+  console.warn("Could not create uploads directory", err);
+}
 app.use("/uploads", express.static(uploadsDir));
 
 declare module "http" {
@@ -106,4 +111,4 @@ app.use((req, res, next) => {
   });
 })();
 
-module.exports = app;
+export default app;

@@ -90,6 +90,7 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
           onChange={handleImageUpload}
         />
         <button
+          aria-label="Upload gambar baru untuk slider"
           data-testid={`button-upload-image-${slider._id}`}
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
@@ -103,32 +104,36 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
       <div className="flex flex-1 flex-col gap-3 w-full">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="col-span-full flex flex-col gap-1">
-            <label className="text-xs text-[#5f5e5e]">Headline Utama</label>
+            <label htmlFor={`headline-${slider._id}`} className="text-xs text-[#5f5e5e]">Headline Utama</label>
             <Input
+              id={`headline-${slider._id}`}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="border-slate-200 text-sm text-[#191c1e]"
             />
           </div>
           <div className="col-span-full flex flex-col gap-1">
-            <label className="text-xs text-[#5f5e5e]">Sub-headline</label>
+            <label htmlFor={`subheadline-${slider._id}`} className="text-xs text-[#5f5e5e]">Sub-headline</label>
             <Textarea
+              id={`subheadline-${slider._id}`}
               value={subtitle}
               onChange={(e) => setSubtitle(e.target.value)}
               className="min-h-[72px] resize-none border-slate-200 text-sm text-[#191c1e]"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-[#5f5e5e]">Teks Tombol (CTA)</label>
+            <label htmlFor={`cta-text-${slider._id}`} className="text-xs text-[#5f5e5e]">Teks Tombol (CTA)</label>
             <Input
+              id={`cta-text-${slider._id}`}
               value={ctaText}
               onChange={(e) => setCtaText(e.target.value)}
               className="border-slate-200 text-sm text-[#191c1e]"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-[#5f5e5e]">Link Tujuan</label>
+            <label htmlFor={`cta-link-${slider._id}`} className="text-xs text-[#5f5e5e]">Link Tujuan</label>
             <Input
+              id={`cta-link-${slider._id}`}
               value={ctaLink}
               onChange={(e) => setCtaLink(e.target.value)}
               className="border-slate-200 text-sm text-[#191c1e]"
@@ -144,12 +149,13 @@ function SliderCard({ slider, onDelete, onUpdate }: SliderCardProps) {
             Simpan
           </Button>
           <Button
+            aria-label={`Hapus slider ${title || 'ini'}`}
             variant="ghost"
             size="sm"
             onClick={() => onDelete(slider._id)}
             className="gap-1 p-0 text-[#ba1a1a] hover:bg-transparent hover:text-[#ba1a1a]"
           >
-            <span className="text-sm">🗑 Hapus</span>
+            <span aria-hidden="true" className="text-sm">🗑 Hapus</span>
           </Button>
         </div>
       </div>
@@ -282,23 +288,26 @@ export default function KontenSliderPage() {
               </h2>
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-[#5f5e5e]">Meta Title</label>
+                  <label htmlFor="meta-title" className="text-xs text-[#5f5e5e]">Meta Title</label>
                   <Input
+                    id="meta-title"
                     defaultValue="Putik Cemerlang | Kab. Malang"
                     className="border-slate-200 text-sm"
                   />
                   <p className="text-[10px] text-slate-400">Disarankan 50–60 karakter.</p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-[#5f5e5e]">Meta Description</label>
+                  <label htmlFor="meta-desc" className="text-xs text-[#5f5e5e]">Meta Description</label>
                   <Textarea
+                    id="meta-desc"
                     defaultValue="Portal pusat informasi maritim resmi Kabupaten Malang untuk pelayanan publik, data perikanan, dan edukasi konservasi laut."
                     className="min-h-[80px] resize-none border-slate-200 text-sm"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-[#5f5e5e]">Keywords (SEO)</label>
+                  <label htmlFor="meta-keywords" className="text-xs text-[#5f5e5e]">Keywords (SEO)</label>
                   <Input
+                    id="meta-keywords"
                     defaultValue="maritim, malang, perikanan, informasi laut"
                     className="border-slate-200 text-sm"
                   />
