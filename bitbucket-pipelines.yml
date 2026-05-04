@@ -5,13 +5,11 @@ pipelines:
           name: Deploy to Production
           deployment: production
           script:
-            - echo "Deploying to Production..."
-            - npm install
-            - npm run build
-            # If using Vercel CLI for deployment:
-            # - npx vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-            # - npx vercel build --prod --token=$VERCEL_TOKEN
-            # - npx vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+            - echo "Deploying to Production on Vercel..."
+            - npm install -g vercel
+            - vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+            - vercel build --prod --token=$VERCEL_TOKEN
+            - vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
   default:
     - step:
         name: Build and Test
