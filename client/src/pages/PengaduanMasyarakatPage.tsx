@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,23 +14,68 @@ const kategoriList = ["Pelayanan Publik","Penyalahgunaan Wewenang","Korupsi","Pe
 
 export default function PengaduanMasyarakatPage() {
   const { toast } = useToast();
-  const [form, setForm] = useState({ nama: "", kontak: "", judul: "", kategori: "", uraian: "" });
+  const [form, setForm] = useState({ nama: "", kontak: "", judul: "", kategori: "", uraian: "", lokasi: "" });
   const [loading, setLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setImageUrl(data.url);
+      toast({ title: "Gambar berhasil diunggah" });
+    } catch (err: any) {
+      toast({ title: "Upload gagal", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nama || !form.kontak || !form.judul || !form.kategori || !form.uraian) {
       toast({ title: "Data belum lengkap", description: "Harap isi semua kolom wajib.", variant: "destructive" });
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      toast({ title: "Pengaduan terkirim", description: "Nomor tiket: PM-" + Math.floor(10000 + Math.random() * 90000) });
-      setForm({ nama: "", kontak: "", judul: "", kategori: "", uraian: "" });
+    try {
+      const res = await fetch("/api/pengaduan-masyarakat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nama: form.nama,
+          email: form.kontak.includes("@") ? form.kontak : "",
+          telepon: form.kontak.includes("@") ? "" : form.kontak,
+          judul: form.judul,
+          isi: form.uraian,
+          lokasi: form.lokasi || undefined,
+          imageUrl: imageUrl || undefined,
+          status: "Baru",
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ message: "Gagal mengirim pengaduan" }));
+        throw new Error(errData.message || "Gagal mengirim pengaduan");
+      }
+      toast({ title: "Pengaduan berhasil terkirim", description: "Terima kasih atas laporan Anda." });
+      setForm({ nama: "", kontak: "", judul: "", kategori: "", uraian: "", lokasi: "" });
+      setImageUrl("");
+    } catch (err: any) {
+      toast({ title: "Gagal mengirim", description: err.message, variant: "destructive" });
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -78,9 +123,22 @@ export default function PengaduanMasyarakatPage() {
                   <Textarea id="uraian" placeholder="Jelaskan detail pengaduan Anda..." rows={5} value={form.uraian} onChange={e => handleChange("uraian", e.target.value)} className="rounded-md border-slate-200" />
                 </div>
                 <div className="flex flex-col gap-2">
+                  <Label htmlFor="lokasi">Lokasi Kejadian</Label>
+                  <Input id="lokasi" placeholder="Contoh: Kantor Dinas Kelautan & Perikanan" value={form.lokasi} onChange={e => handleChange("lokasi", e.target.value)} className="rounded-md border-slate-200" />
+                </div>
+                <div className="flex flex-col gap-2">
                   <Label htmlFor="lampiran">Lampiran (opsional)</Label>
-                  <Input id="lampiran" type="file" className="rounded-md border-slate-200 py-2 text-sm" />
-                  <p className="text-xs text-[#5f5e5e]">Maksimal 5 MB. Format: PDF, JPG, PNG.</p>
+                  <input ref={fileRef} id="lampiran" type="file" accept="image/*,.pdf" className="hidden" onChange={handleUpload} />
+                  <div className="flex items-center gap-3">
+                    <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="border-slate-200 text-xs">
+                      {uploading ? "Mengunggah…" : "Pilih File"}
+                    </Button>
+                    {imageUrl ? (
+                      <span className="text-xs text-green-600">File terunggah ✓</span>
+                    ) : (
+                      <span className="text-xs text-slate-400">Maks. 5 MB. JPG/PNG/PDF</span>
+                    )}
+                  </div>
                 </div>
                 <Button type="submit" disabled={loading} className="mt-2 w-full rounded-lg bg-[#001e40] py-3 text-sm text-white hover:bg-[#001e40]/90">
                   <Send className="mr-2 h-4 w-4" /> {loading ? "Mengirim..." : "Kirim Pengaduan"}

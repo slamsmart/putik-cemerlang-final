@@ -10,6 +10,7 @@ export default defineSchema({
     jenis: v.union(v.literal("Masuk"), v.literal("Keluar")),
     status: v.union(v.literal("Terarsip"), v.literal("Terbaca"), v.literal("Terkirim"), v.literal("Belum Dibaca")),
     pdfUrl: v.optional(v.string()),
+    tanggalSurat: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_jenis", ["jenis"]).index("by_created", ["createdAt"]),
 
@@ -41,4 +42,33 @@ export default defineSchema({
     displayOrder: v.number(),
     isActive: v.boolean(),
   }).index("by_displayOrder", ["displayOrder"]),
+
+  settings: defineTable({
+    key: v.string(),
+    value: v.string(),
+  }).index("by_key", ["key"]),
+
+  pengaduanMasyarakat: defineTable({
+    nama: v.string(),
+    email: v.string(),
+    telepon: v.string(),
+    judul: v.string(),
+    isi: v.string(),
+    lokasi: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    status: v.union(v.literal("Baru"), v.literal("Diproses"), v.literal("Selesai")),
+    createdAt: v.number(),
+  }).index("by_created", ["createdAt"]).index("by_status", ["status"]),
+
+  whistleBlowing: defineTable({
+    nama: v.string(),
+    email: v.string(),
+    telepon: v.string(),
+    judul: v.string(),
+    isi: v.string(),
+    imageUrl: v.optional(v.string()),
+    isAnonymous: v.boolean(),
+    status: v.union(v.literal("Baru"), v.literal("Diproses"), v.literal("Selesai")),
+    createdAt: v.number(),
+  }).index("by_created", ["createdAt"]).index("by_status", ["status"]),
 });

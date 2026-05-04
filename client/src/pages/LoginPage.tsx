@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { motion } from "framer-motion";
-import { login } from "@/lib/auth";
+import { useMutation as useConvexMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -13,19 +14,32 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const verifyPassword = useConvexMutation(api.settings.verifyPassword);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    setTimeout(() => {
-      const ok = login(username.trim(), password);
+    
+    try {
+      if (username.trim() !== "admin") {
+        setError("Username atau password salah. Silakan coba lagi.");
+        setLoading(false);
+        return;
+      }
+      
+      const ok = await verifyPassword({ password });
       if (ok) {
+        sessionStorage.setItem("putik_admin_auth", "1");
         setLocation("/admin");
       } else {
         setError("Username atau password salah. Silakan coba lagi.");
       }
+    } catch (err) {
+      setError("Terjadi kesalahan saat memverifikasi. Coba lagi.");
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
 
   return (
@@ -36,20 +50,26 @@ export default function LoginPage() {
         transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
         className="w-full max-w-sm"
       >
-        {/* Logo / Branding */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 backdrop-blur">
-            <svg viewBox="0 0 32 32" className="h-9 w-9 fill-white" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14 14-6.268 14-14S23.732 2 16 2zm0 4a10 10 0 0 1 9.8 8H6.2A10 10 0 0 1 16 6zm0 20a10 10 0 0 1-9.8-8h19.6A10 10 0 0 1 16 26z"/>
-            </svg>
+        <Link href="/" className="mb-8 block text-center cursor-pointer">
+          <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-2xl bg-white p-2 shadow-lg">
+            <img 
+              src="/logo.png?v=2" 
+              alt="Logo" 
+              className="h-full w-auto object-contain"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.style.display = 'none';
+                target.parentElement!.innerHTML = `<svg viewBox="0 0 32 32" class="h-9 w-9 fill-[#003366]" xmlns="http://www.w3.org/2000/svg"><path d="M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14 14-6.268 14-14S23.732 2 16 2zm0 4a10 10 0 0 1 9.8 8H6.2A10 10 0 0 1 16 6zm0 20a10 10 0 0 1-9.8-8h19.6A10 10 0 0 1 16 26z"/></svg>`;
+              }}
+            />
           </div>
           <h1 className="text-xl font-bold text-white [font-family:'Public_Sans',Helvetica]">
             PUTIK CEMERLANG
           </h1>
           <p className="mt-1 text-sm text-blue-200 [font-family:'Inter',Helvetica]">
-            Portal Admin — Cabang Dinas Kelautan dan Perikanan Kab, Malang
+            Portal Admin Cabang Dinas Kelautan dan Perikanan Kab. Malang
           </p>
-        </div>
+        </Link>
 
         {/* Card */}
         <div className="rounded-2xl bg-white p-8 shadow-2xl">

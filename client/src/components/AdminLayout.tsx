@@ -21,6 +21,16 @@ const primaryNavItems = [
     href: "/admin/arsip-surat",
   },
   {
+    label: "Pengaduan Masyarakat",
+    icon: "/figmaAssets/container-4.svg",
+    href: "/admin/pengaduan-masyarakat",
+  },
+  {
+    label: "Whistle Blowing",
+    icon: "/figmaAssets/container-4.svg",
+    href: "/admin/whistle-blowing",
+  },
+  {
     label: "Konten & Slider",
     icon: "/figmaAssets/container-2.svg",
     href: "/admin/konten-slider",
@@ -80,9 +90,17 @@ function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         <div className="flex flex-col h-full overflow-y-auto">
           <header className="flex w-full flex-col px-4 pb-8 pt-4 relative">
             <Link href="/admin">
-              <h1 className="[font-family:'Inter',Helvetica] text-lg font-bold leading-7 tracking-[0] text-blue-900 cursor-pointer">
-                PUTIK CEMERLANG
-              </h1>
+              <div className="flex items-center gap-2 cursor-pointer mb-2">
+                <img 
+                  src="/logo.png?v=2" 
+                  alt="" 
+                  className="h-8 w-auto" 
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+                <h1 className="[font-family:'Inter',Helvetica] text-lg font-bold leading-7 tracking-[0] text-blue-900 truncate">
+                  PUTIK CEMERLANG
+                </h1>
+              </div>
             </Link>
             <p className="[font-family:'Inter',Helvetica] text-xs font-normal leading-4 tracking-[0] text-[#5f5e5e]">
               Admin Portal - Malang
@@ -201,9 +219,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     <div className="flex min-h-screen bg-[#f7f9fb] relative w-full overflow-x-hidden">
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 w-full h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-20 shadow-sm">
-        <h1 className="[font-family:'Inter',Helvetica] text-lg font-bold text-blue-900 truncate">
-          PUTIK CEMERLANG
-        </h1>
+        <div className="flex items-center gap-2">
+          <img 
+            src="/logo.png?v=2" 
+            alt="" 
+            className="h-8 w-auto" 
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
+          <h1 className="[font-family:'Inter',Helvetica] text-lg font-bold text-blue-900 truncate">
+            PUTIK CEMERLANG
+          </h1>
+        </div>
         <button 
           onClick={() => setIsSidebarOpen(true)} 
           className="p-2 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"

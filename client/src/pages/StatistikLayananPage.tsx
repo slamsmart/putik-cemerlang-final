@@ -1,4 +1,4 @@
-import { useState, forwardRef, useImperativeHandle, useRef } from "react";
+import { useState, forwardRef, useImperativeHandle, useRef, useEffect } from "react";
 import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { motion, AnimatePresence } from "framer-motion";
@@ -107,6 +107,25 @@ export default function StatistikLayananPage() {
   const stats = apiStats ?? [];
   const activeStatsCount = stats.filter(s => s.isActive).length;
 
+  const [dataUpdateText, setDataUpdateText] = useState("");
+  const updateSetting = useConvexMutation(api.settings.set);
+  const currentDataUpdateText = useConvexQuery(api.settings.get, { key: "data_update_text" });
+
+  useEffect(() => {
+    if (currentDataUpdateText !== undefined && dataUpdateText === "") {
+      setDataUpdateText(currentDataUpdateText || "DATA UPDATE: DESEMBER 2023");
+    }
+  }, [currentDataUpdateText]);
+
+  const handleSaveSetting = async () => {
+    try {
+      await updateSetting({ key: "data_update_text", value: dataUpdateText });
+      toast({ title: "Teks pembaruan berhasil disimpan" });
+    } catch {
+      toast({ title: "Gagal menyimpan teks pembaruan", variant: "destructive" });
+    }
+  };
+
   const handleLoadDummy = async () => {
     try {
       for (const stat of fallbackStats) {
@@ -150,6 +169,30 @@ export default function StatistikLayananPage() {
 
       <section className="grid grid-cols-12 gap-6">
         <div className="col-[1_/_13] flex flex-col gap-6">
+          <Card className="rounded-xl border border-[#c3c6d1] bg-white shadow-[0px_1px_2px_#0000000d]">
+            <CardContent className="flex flex-col gap-4 p-6">
+              <div>
+                <h2 className="text-base font-normal text-[#001e40] [font-family:'Public_Sans',Helvetica]">
+                  Informasi Pembaruan Data
+                </h2>
+                <p className="text-xs text-[#5f5e5e] mt-1">
+                  Atur teks informasi waktu pembaruan data yang tampil di atas statistik (contoh: DATA UPDATE: DESEMBER 2026).
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <Input 
+                  value={dataUpdateText}
+                  onChange={(e) => setDataUpdateText(e.target.value)}
+                  className="max-w-md"
+                  placeholder="DATA UPDATE: DESEMBER 2026"
+                />
+                <Button onClick={handleSaveSetting} className="bg-[#001e40] text-white hover:bg-[#001e40]/90">
+                  Simpan Teks
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="rounded-xl border border-[#c3c6d1] bg-white shadow-[0px_1px_2px_#0000000d]">
             <CardContent className="flex flex-col gap-6 p-6">
               <div className="flex items-center justify-between">

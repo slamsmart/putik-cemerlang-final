@@ -42,6 +42,7 @@ export default function LandingPage() {
   const apiStats = useConvexQuery(api.stats.list);
   const guestbookData = useConvexQuery(api.guestbook.list) || [];
   const stats = (apiStats && apiStats.length > 0 ? apiStats : fallbackStats).filter((s) => s.isActive);
+  const dataUpdateText = useConvexQuery(api.settings.get, { key: "data_update_text" }) || "DATA UPDATE: DESEMBER 2023";
   
   const [timeRange, setTimeRange] = useState("30");
 
@@ -75,8 +76,16 @@ export default function LandingPage() {
       {/* ── Navigation ───────────────────────────────────── */}
       <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm fixed top-0 w-full z-50">
         <nav className="flex justify-between items-center max-w-[1280px] mx-auto px-6 h-20">
-          <div className="text-xl font-bold tracking-tight text-[#003366] dark:text-white uppercase">
-            Putik Cemerlang
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo.png?v=2" 
+              alt="" 
+              className="h-10 w-auto"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+            />
+            <div className="text-xl font-bold tracking-tight text-[#003366] dark:text-white uppercase">
+              Putik Cemerlang
+            </div>
           </div>
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/"><a className="font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight text-blue-700 dark:text-blue-400 border-b-2 border-blue-700 pb-1">Beranda</a></Link>
@@ -122,9 +131,9 @@ export default function LandingPage() {
                 <h2 className="font-['Public_Sans',Helvetica] text-[#001e40] uppercase text-sm tracking-widest font-bold">Capaian &amp; Jangkauan Layanan</h2>
                 <p className="text-[#5f5e5e] text-base max-w-2xl">Data terkini mengenai infrastruktur, sumber daya manusia, dan konservasi maritim di wilayah Kabupaten Malang.</p>
               </div>
-              <div className="inline-flex items-center px-4 py-2 bg-slate-100 rounded-lg text-slate-600 text-xs font-bold">
+              <div className="inline-flex items-center px-4 py-2 bg-slate-100 rounded-lg text-slate-600 text-xs font-bold uppercase tracking-wider">
                 <LucideIcons.Calendar className="w-4 h-4 mr-2" />
-                DATA UPDATE: DESEMBER 2023
+                {dataUpdateText}
               </div>
             </div>
             
@@ -243,51 +252,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Table Section */}
-              <div className="rounded-xl border border-[#c3c6d1] bg-white shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 border-b border-slate-200">
-                      <tr>
-                        <th className="px-6 py-4 font-semibold text-[#001e40]">Nama Pengunjung</th>
-                        <th className="px-6 py-4 font-semibold text-[#001e40]">Instansi / Pekerjaan</th>
-                        <th className="px-6 py-4 font-semibold text-[#001e40]">Tanggal</th>
-                        <th className="px-6 py-4 font-semibold text-[#001e40]">Status Layanan</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {guestbookData.length > 0 ? (
-                        guestbookData.slice(0, 10).map((item) => (
-                          <tr key={item._id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4 font-medium text-[#1e293b]">
-                              {item.nama}
-                            </td>
-                            <td className="px-6 py-4 text-slate-500">
-                              {item.pekerjaan || "-"}
-                            </td>
-                            <td className="px-6 py-4 text-slate-500">
-                              {item.tanggal}
-                            </td>
-                            <td className="px-6 py-4">
-                              <span 
-                                className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyle[item.status] || "bg-slate-100 text-slate-600"}`}
-                              >
-                                {item.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
-                            Belum ada data kunjungan.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
             </div>
           </div>
         </section>

@@ -10,8 +10,11 @@
 
 import type * as arsipSurat from "../arsipSurat.js";
 import type * as guestbook from "../guestbook.js";
+import type * as pengaduanMasyarakat from "../pengaduanMasyarakat.js";
+import type * as settings from "../settings.js";
 import type * as sliders from "../sliders.js";
 import type * as stats from "../stats.js";
+import type * as whistleBlowing from "../whistleBlowing.js";
 
 import type {
   ApiFromModules,
@@ -22,8 +25,11 @@ import type {
 declare const fullApi: ApiFromModules<{
   arsipSurat: typeof arsipSurat;
   guestbook: typeof guestbook;
+  pengaduanMasyarakat: typeof pengaduanMasyarakat;
+  settings: typeof settings;
   sliders: typeof sliders;
   stats: typeof stats;
+  whistleBlowing: typeof whistleBlowing;
 }>;
 
 /**

@@ -59,16 +59,17 @@ const fallbackSliders: ConvexSlider[] = [
 ];
 
 export function HeroSlider() {
-  // ✅ Real-time Convex — updates instantly when admin edits, persists on refresh
+  // ✅ ALL hooks must be at the top — no hooks after conditional returns!
   const convexSliders = useConvexQuery(api.sliders.list);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [[current, direction], setPage] = useState([0, 0]);
 
+  // Derive slider list — safe to compute before hooks since no hooks below
   const sliders = (
     convexSliders && convexSliders.length > 0
       ? (convexSliders as ConvexSlider[])
       : fallbackSliders
   ).filter((s) => s.isActive);
-
-  const [[current, direction], setPage] = useState([0, 0]);
 
   const paginate = useCallback(
     (dir: number) => {
@@ -77,13 +78,38 @@ export function HeroSlider() {
     [sliders.length]
   );
 
+  // Preload first image to avoid flash
+  useEffect(() => {
+    if (convexSliders === undefined) return;
+    const active =
+      convexSliders.length > 0
+        ? (convexSliders as ConvexSlider[]).filter((s) => s.isActive)
+        : fallbackSliders.filter((s) => s.isActive);
+
+    if (active.length > 0 && active[0].imageUrl) {
+      const img = new Image();
+      img.src = active[0].imageUrl;
+      img.onload = () => setImageLoaded(true);
+      img.onerror = () => setImageLoaded(true);
+    } else {
+      setImageLoaded(true);
+    }
+  }, [convexSliders]);
+
+  // Autoplay
   useEffect(() => {
     if (sliders.length <= 1) return;
     const id = setInterval(() => paginate(1), AUTOPLAY_MS);
     return () => clearInterval(id);
   }, [paginate, sliders.length]);
 
+  // ✅ Conditional returns AFTER all hooks
+  if (convexSliders === undefined || !imageLoaded) {
+    return <section className="relative h-[420px] sm:h-[500px] md:h-[580px] bg-[#001e40] animate-pulse" />;
+  }
+
   if (!sliders.length) return null;
+
   const slide = sliders[current % sliders.length];
 
   return (
@@ -156,7 +182,7 @@ export function HeroSlider() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Prev / Next arrows — hidden on small screens */}
+      {/* Prev / Next arrows */}
       {sliders.length > 1 && (
         <>
           <button

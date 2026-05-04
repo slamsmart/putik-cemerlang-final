@@ -1,27 +1,17 @@
+import { useMemo } from "react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
-
-const statsCards = [
-  { label: "Total Pengunjung", value: "24,381", change: "+12% bulan ini", icon: "👥", color: "bg-blue-50 text-blue-900" },
-  { label: "Buku Tamu Masuk", value: "142", change: "+8 hari ini", icon: "📖", color: "bg-green-50 text-green-800" },
-  { label: "Surat Diarsipkan", value: "1,024", change: "+3 minggu ini", icon: "📄", color: "bg-amber-50 text-amber-800" },
-  { label: "Slider Aktif", value: "3", change: "Dari 5 banner", icon: "🖼️", color: "bg-purple-50 text-purple-800" },
-];
-
-const recentActivities = [
-  { type: "Buku Tamu", desc: "Entri baru dari Bapak Supriyadi - Nelayan Sendangbiru", time: "5 menit lalu", status: "Baru" },
-  { type: "Arsip Surat", desc: "Surat masuk No. 035/KKP/2024 telah diarsipkan", time: "1 jam lalu", status: "Diarsipkan" },
-  { type: "Konten", desc: "Banner slider 'Modernisasi Perikanan' diperbarui", time: "2 jam lalu", status: "Diperbarui" },
-  { type: "Buku Tamu", desc: "Entri baru dari Ibu Rahayu - Pelaku UMKM Ikan", time: "3 jam lalu", status: "Baru" },
-  { type: "Arsip Surat", desc: "Surat keluar No. 022/DKP/2024 diterbitkan", time: "Kemarin", status: "Diterbitkan" },
-];
+import { useQuery as useConvexQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 const quickLinks = [
   { label: "Kelola Buku Tamu", href: "/admin/buku-tamu", icon: "/figmaAssets/container-3.svg" },
   { label: "Arsip Surat", href: "/admin/arsip-surat", icon: "/figmaAssets/container-4.svg" },
+  { label: "Pengaduan Masyarakat", href: "/admin/pengaduan-masyarakat", icon: "/figmaAssets/container-4.svg" },
+  { label: "Whistle Blowing", href: "/admin/whistle-blowing", icon: "/figmaAssets/container-4.svg" },
   { label: "Konten & Slider", href: "/admin/konten-slider", icon: "/figmaAssets/container-2.svg" },
   { label: "Pengaturan", href: "/admin/pengaturan", icon: "/figmaAssets/container-8.svg" },
 ];
@@ -35,6 +25,81 @@ const statusColor: Record<string, string> = {
 
 export default function DashboardPage() {
   const [, setLocation] = useLocation();
+
+  const guestbookData = useConvexQuery(api.guestbook.list) || [];
+  const arsipData = useConvexQuery(api.arsipSurat.list) || [];
+  const pengaduanData = useConvexQuery(api.pengaduanMasyarakat.list) || [];
+  const wbsData = useConvexQuery(api.whistleBlowing.list) || [];
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const { suratMasukBulanIni, suratKeluarBulanIni, totalSurat, bukuTamuTotal, pengaduanBaru, wbsBaru } = useMemo(() => {
+    let masuk = 0;
+    let keluar = 0;
+    for (const item of arsipData) {
+      const d = new Date(item.tanggal);
+      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+        if (item.jenis === "Masuk") masuk++;
+        else keluar++;
+      }
+    }
+    return {
+      suratMasukBulanIni: masuk,
+      suratKeluarBulanIni: keluar,
+      totalSurat: arsipData.length,
+      bukuTamuTotal: guestbookData.length,
+      pengaduanBaru: pengaduanData.filter((p) => p.status === "Baru").length,
+      wbsBaru: wbsData.filter((w) => w.status === "Baru").length,
+    };
+  }, [arsipData, guestbookData, pengaduanData, wbsData, currentMonth, currentYear]);
+
+  const recentActivities = useMemo(() => {
+    const items: { type: string; desc: string; time: string; status: string }[] = [];
+    for (const g of guestbookData.slice(0, 3)) {
+      items.push({
+        type: "Buku Tamu",
+        desc: `Entri baru dari ${g.nama} - ${g.pekerjaan || "Pengunjung"}`,
+        time: g.tanggal || "-",
+        status: "Baru",
+      });
+    }
+    for (const s of arsipData.slice(0, 2)) {
+      items.push({
+        type: "Arsip Surat",
+        desc: `Surat ${s.jenis.toLowerCase()} No. ${s.nomor} — ${s.perihal}`,
+        time: new Date(s.tanggal).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
+        status: s.status === "Terarsip" ? "Diarsipkan" : s.status === "Terkirim" ? "Diterbitkan" : "Baru",
+      });
+    }
+    for (const p of pengaduanData.slice(0, 2)) {
+      items.push({
+        type: "Pengaduan",
+        desc: `Pengaduan dari ${p.nama}: ${p.judul}`,
+        time: new Date(p.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
+        status: p.status === "Baru" ? "Baru" : p.status === "Diproses" ? "Diproses" : "Selesai",
+      });
+    }
+    for (const w of wbsData.slice(0, 2)) {
+      items.push({
+        type: "WBS",
+        desc: `Laporan WBS: ${w.judul}${w.isAnonymous ? " (Anonim)" : ""}`,
+        time: new Date(w.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
+        status: w.status === "Baru" ? "Baru" : w.status === "Diproses" ? "Diproses" : "Selesai",
+      });
+    }
+    return items.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5);
+  }, [guestbookData, arsipData, pengaduanData, wbsData]);
+
+  const bulanLabel = now.toLocaleString("id-ID", { month: "long" });
+
+  const statsCards = [
+    { label: "Buku Tamu Masuk", value: bukuTamuTotal.toLocaleString(), change: "Real-time", icon: "📖", color: "bg-green-50 text-green-800" },
+    { label: "Surat Masuk & Keluar Bulan Ini", value: `${suratMasukBulanIni + suratKeluarBulanIni}`, change: `${bulanLabel} ${currentYear}`, icon: "📨", color: "bg-blue-50 text-blue-900" },
+    { label: "Pengaduan Baru", value: pengaduanBaru.toLocaleString(), change: "Belum Diproses", icon: "�", color: "bg-amber-50 text-amber-800" },
+    { label: "WBS Baru", value: wbsBaru.toLocaleString(), change: "Belum Diproses", icon: "�️", color: "bg-red-50 text-red-800" },
+  ];
 
   return (
     <AdminLayout>
@@ -91,6 +156,9 @@ export default function DashboardPage() {
               Aktivitas Terbaru
             </h2>
             <div className="flex flex-col divide-y divide-slate-100">
+              {recentActivities.length === 0 && (
+                <p className="py-6 text-center text-sm text-slate-400">Belum ada aktivitas.</p>
+              )}
               {recentActivities.map((act, i) => (
                 <div
                   key={i}
@@ -107,7 +175,7 @@ export default function DashboardPage() {
                     <span className="text-xs text-slate-400">{act.time}</span>
                   </div>
                   <Badge
-                    className={`ml-4 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-normal hover:opacity-80 ${statusColor[act.status]}`}
+                    className={`ml-4 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-normal hover:opacity-80 ${statusColor[act.status] || "bg-slate-100 text-slate-700"}`}
                   >
                     {act.status}
                   </Badge>

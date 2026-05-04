@@ -21,6 +21,7 @@ export const create = mutation({
     jenis: v.union(v.literal("Masuk"), v.literal("Keluar")),
     status: v.union(v.literal("Terarsip"), v.literal("Terbaca"), v.literal("Terkirim"), v.literal("Belum Dibaca")),
     pdfUrl: v.optional(v.string()),
+    tanggalSurat: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("arsipSurat", {
@@ -40,6 +41,7 @@ export const update = mutation({
     jenis: v.optional(v.union(v.literal("Masuk"), v.literal("Keluar"))),
     status: v.optional(v.union(v.literal("Terarsip"), v.literal("Terbaca"), v.literal("Terkirim"), v.literal("Belum Dibaca"))),
     pdfUrl: v.optional(v.string()),
+    tanggalSurat: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...patch }) => {
     await ctx.db.patch(id, patch);
@@ -70,6 +72,21 @@ export const seed = mutation({
     for (const s of seeds) {
       await ctx.db.insert("arsipSurat", { ...s, createdAt: Date.now() });
     }
+  },
+});
+
+// ── Convex File Storage ─────────────────────────────────────
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const getFileUrl = query({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, { storageId }) => {
+    return await ctx.storage.getUrl(storageId);
   },
 });
 

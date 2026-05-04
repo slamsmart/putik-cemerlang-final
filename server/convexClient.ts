@@ -1,4 +1,4 @@
-const CONVEX_URL = "https://mellow-gerbil-927.convex.cloud";
+const CONVEX_URL = process.env.CONVEX_URL || "https://fabulous-lemur-912.convex.cloud";
 
 export async function convexQuery(path: string, args: Record<string, unknown> = {}) {
   const res = await fetch(`${CONVEX_URL}/api/query`, {

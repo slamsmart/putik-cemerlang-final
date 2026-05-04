@@ -2,7 +2,7 @@ const SESSION_KEY = "putik_admin_auth";
 
 export const ADMIN_CREDENTIALS = {
   username: "admin",
-  password: "putik@malang2024",
+  password: "putik@malang2026",
 };
 
 export function login(username: string, password: string): boolean {

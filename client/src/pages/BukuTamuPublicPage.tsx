@@ -244,7 +244,12 @@ export default function BukuTamuPublicPage() {
                 <Anchor className="w-32 h-32 absolute -right-4 -bottom-4 opacity-10" />
                 <h4 className="text-xl font-semibold mb-2">Butuh Bantuan?</h4>
                 <p className="text-blue-100 text-sm mb-6">Petugas kami siap membantu jika Anda mengalami kesulitan dalam pengisian formulir.</p>
-                <a className="inline-flex items-center gap-2 text-cyan-400 font-bold hover:text-white transition-colors" href="#">
+                <a
+                  className="inline-flex items-center gap-2 text-cyan-400 font-bold hover:text-white transition-colors"
+                  href={`https://mail.google.com/mail/?view=cm&fs=1&to=cabangdinasmalang@gmail.com&su=${encodeURIComponent("Permohonan Bantuan – Pengisian Formulir Buku Tamu Dinas Kelautan & Perikanan Kab. Malang")}&body=${encodeURIComponent(`Yth. Petugas Helpdesk Dinas Kelautan & Perikanan Kabupaten Malang,\n\nDengan hormat, saya mengalami kesulitan dalam pengisian formulir Buku Tamu Dinas Kelautan & Perikanan Kabupaten Malang. Mohon bantuan dan panduan teknis dari petugas helpdesk agar saya dapat menyelesaikan pengisian formulir dengan benar.\n\nAtas perhatian dan bantuannya, saya ucapkan terima kasih.\n\nHormat saya,\n\n[Nama Lengkap]\n[No. Telepon]`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   Hubungi Helpdesk
                   <ArrowRight className="w-5 h-5" />
                 </a>

@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // ── Convex Client ─────────────────────────────────────────────────────────────
-const CONVEX_URL = process.env.CONVEX_URL || "https://mellow-gerbil-927.convex.cloud";
+const CONVEX_URL = (process.env.CONVEX_URL || "https://fabulous-lemur-912.convex.cloud").trim();
 
 async function convexQuery(queryPath: string, args: Record<string, unknown> = {}) {
   const res = await fetch(`${CONVEX_URL}/api/query`, {
@@ -35,11 +35,18 @@ async function convexMutation(mutPath: string, args: Record<string, unknown> = {
   const res = await fetch(`${CONVEX_URL}/api/mutation`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: mutPath, args }),
+    body: JSON.stringify({ path: mutPath, format: "json", args }),
   });
-  if (!res.ok) throw new Error(`Convex mutation failed: ${res.statusText}`);
+  if (!res.ok) {
+    const errText = await res.text().catch(() => res.statusText);
+    console.error(`[convexMutation] HTTP error for ${mutPath}:`, res.status, errText);
+    throw new Error(`Convex mutation failed (${res.status}): ${errText}`);
+  }
   const data = await res.json();
-  if (data.status !== "success") throw new Error(data.errorMessage || "Convex error");
+  if (data.status !== "success") {
+    console.error(`[convexMutation] Convex error for ${mutPath}:`, data.errorMessage);
+    throw new Error(data.errorMessage || "Convex error");
+  }
   return data.value;
 }
 
@@ -48,8 +55,8 @@ const uploadImage = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) cb(null, true);
-    else cb(new Error("Only image files allowed"));
+    if (file.mimetype.startsWith("image/") || file.mimetype === "application/pdf") cb(null, true);
+    else cb(new Error("Hanya file gambar atau PDF yang diizinkan"));
   },
 });
 
@@ -95,6 +102,7 @@ app.get("/api/debug-env", (_req: Request, res: Response) => {
     cloudinary_key: !!process.env.CLOUDINARY_API_KEY,
     cloudinary_secret: !!process.env.CLOUDINARY_API_SECRET,
     convex_url: !!process.env.CONVEX_URL,
+    convex_url_value: CONVEX_URL,
     node_env: process.env.NODE_ENV,
   });
 });
@@ -106,15 +114,18 @@ app.post("/api/upload", uploadImage.single("image"), async (req: Request, res: R
   if (isCloudinaryConfigured()) {
     try {
       const cloudinary = await getCloudinary();
+      const isPdf = req.file!.mimetype === "application/pdf";
       const result = await new Promise<any>((resolve, reject) => {
         cloudinary.uploader.upload_stream(
-          { folder: "putik-cemerlang/sliders", format: "webp", quality: "auto" },
+          isPdf
+            ? { folder: "putik-cemerlang/pengaduan", resource_type: "raw", type: "upload", access_mode: "public" }
+            : { folder: "putik-cemerlang/pengaduan", format: "webp", quality: "auto" },
           (err, result) => (err ? reject(err) : resolve(result))
         ).end(req.file!.buffer);
       });
       return res.json({ url: result.secure_url });
     } catch (e: any) {
-      console.warn("Cloudinary image upload failed, falling back to local:", e?.message);
+      console.warn("Cloudinary upload failed, falling back to local:", e?.message);
     }
   }
 
@@ -126,35 +137,157 @@ app.post("/api/upload", uploadImage.single("image"), async (req: Request, res: R
   }
 });
 
-// ── PDF Upload ────────────────────────────────────────────────────────────────
+// ── PDF Upload (Cloudinary object storage) ───────────────────────────────────
 app.post("/api/upload-pdf", uploadPdf.single("file"), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
-  if (isCloudinaryConfigured()) {
-    try {
-      const cloudinary = await getCloudinary();
-      const isPdf = req.file.mimetype === "application/pdf";
-      const result = await new Promise<any>((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: "putik-cemerlang/arsip-surat",
-            resource_type: isPdf ? "raw" : "image",
-            public_id: `arsip_${Date.now()}`,
-          },
-          (err, result) => (err ? reject(err) : resolve(result))
-        ).end(req.file!.buffer);
-      });
-      return res.json({ url: result.secure_url });
-    } catch (e: any) {
-      console.warn("Cloudinary PDF upload failed, falling back to local:", e?.message);
-    }
+  if (!isCloudinaryConfigured()) {
+    return res.status(500).json({ message: "Cloudinary belum dikonfigurasi di Vercel." });
   }
 
   try {
-    const url = saveLocal(req.file.buffer, req.file.originalname);
-    return res.json({ url, note: "File disimpan lokal (Cloudinary tidak dikonfigurasi)." });
+    const cloudinary = await getCloudinary();
+    const isPdf = req.file.mimetype === "application/pdf";
+    const ext = isPdf ? "pdf" : (path.extname(req.file.originalname).replace(".", "") || "jpg");
+    const publicId = `putik-cemerlang/arsip-surat/arsip_${Date.now()}.${ext}`;
+    const result = await new Promise<any>((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          resource_type: isPdf ? "raw" : "image",
+          type: "upload",
+          public_id: publicId,
+          access_mode: "public",
+        },
+        (err, result) => (err ? reject(err) : resolve(result))
+      ).end(req.file!.buffer);
+    });
+
+    if (!result?.secure_url) {
+      throw new Error("Cloudinary upload tidak mengembalikan URL.");
+    }
+
+    return res.json({
+      url: result.secure_url,
+      resourceType: result.resource_type,
+    });
   } catch (e: any) {
-    return res.status(500).json({ message: e?.message || "Upload failed" });
+    console.error("Cloudinary PDF upload error:", e?.message);
+    if (process.env.NODE_ENV === "production") {
+      return res.status(500).json({
+        message: `Upload PDF ke Cloudinary gagal: ${e?.message || "Unknown error"}`,
+      });
+    }
+    try {
+      const url = saveLocal(req.file.buffer, req.file.originalname);
+      return res.json({ url, note: "File disimpan lokal (Cloudinary gagal)." });
+    } catch (localErr: any) {
+      return res.status(500).json({ message: localErr?.message || "Upload failed" });
+    }
+  }
+});
+
+// ── PDF Proxy (serve Cloudinary files via server using API credentials) ─────────
+app.get("/api/pdf-proxy", async (req: Request, res: Response) => {
+  const url = req.query.url as string;
+  if (!url) return res.status(400).json({ message: "Missing url parameter" });
+
+  const isCloudinaryUrl = url.includes("cloudinary.com");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+
+  // Determine correct MIME type from the URL extension (never trust upstream octet-stream)
+  const urlExt = (url.split("?")[0].split(".").pop() || "pdf").toLowerCase();
+  const mimeMap: Record<string, string> = {
+    pdf: "application/pdf",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+  };
+  const forcedMime = mimeMap[urlExt] || "application/pdf";
+  const filename = url.split("/").pop()?.split("?")[0] || `document.${urlExt}`;
+
+  // Helper: fetch URL, override content-type to correct MIME, send inline
+  const tryFetchAndSend = async (fetchUrl: string): Promise<boolean> => {
+    try {
+      const r = await fetch(fetchUrl, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; PutikProxy/1.0)" },
+      });
+      if (!r.ok) return false;
+      // Force correct content-type — Cloudinary private_download_url returns octet-stream
+      res.setHeader("Content-Type", forcedMime);
+      res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+      res.send(Buffer.from(await r.arrayBuffer()));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  try {
+    // 1️⃣ Direct fetch (works if file is truly public)
+    if (await tryFetchAndSend(url)) return;
+    console.warn(`PDF proxy: direct fetch failed for ${url}`);
+
+    if (isCloudinaryUrl && isCloudinaryConfigured()) {
+      const cloudinary = await getCloudinary();
+
+      // Extract public_id and extension from URL
+      const match = url.match(/\/(?:raw|image|auto)\/upload\/(?:v\d+\/)?(.+)$/);
+      if (match) {
+        const fullPath = match[1]; // e.g. "putik-cemerlang/arsip-surat/arsip_123.pdf"
+        const ext = fullPath.includes(".") ? (fullPath.split(".").pop() || "pdf") : "pdf";
+        const publicIdWithExt = fullPath;
+        const publicIdWithoutExt = fullPath.replace(/\.[^.]+$/, "");
+        const urlResType = url.includes("/raw/upload/") ? "raw" : "image";
+        const resTypes = urlResType === "raw"
+          ? (["raw", "image"] as const)
+          : (["image", "raw"] as const);
+        const publicIdCandidates = Array.from(new Set([publicIdWithExt, publicIdWithoutExt]));
+
+        // 2️⃣ private_download_url — uses API key+secret, bypasses delivery auth
+        for (const rt of resTypes) {
+          for (const publicId of publicIdCandidates) {
+            for (const format of [ext, ""] as const) {
+              try {
+                const dlUrl = (cloudinary.utils as any).private_download_url(publicId, format, {
+                  resource_type: rt,
+                  expires_at: Math.floor(Date.now() / 1000) + 600,
+                });
+                if (await tryFetchAndSend(dlUrl)) return;
+              } catch (e: any) {
+                console.warn(`PDF proxy: private_download_url (${rt}, ${publicId}) error:`, e?.message);
+              }
+            }
+          }
+        }
+
+        // 3️⃣ Signed delivery URL fallback
+        for (const rt of resTypes) {
+          for (const publicId of publicIdCandidates) {
+            try {
+              const signedUrl = cloudinary.url(publicId, {
+                resource_type: rt,
+                type: "upload",
+                sign_url: true,
+                secure: true,
+              });
+              if (await tryFetchAndSend(signedUrl)) return;
+            } catch (e: any) {
+              console.warn(`PDF proxy: signed URL (${rt}, ${publicId}) error:`, e?.message);
+            }
+          }
+        }
+      }
+    }
+
+    return res.status(404).json({
+      message: "File PDF tidak dapat diakses dari Cloudinary. Aktifkan Cloudinary Settings > Security > Restricted media types > Allow delivery of PDF and ZIP files, lalu upload ulang PDF.",
+    });
+  } catch (e: any) {
+    console.error("PDF proxy error:", e);
+    return res.status(500).json({ message: e?.message || "Proxy error" });
   }
 });
 
@@ -170,10 +303,14 @@ app.get("/api/arsip-surat", async (_req: Request, res: Response) => {
 
 app.post("/api/arsip-surat", async (req: Request, res: Response) => {
   try {
-    const { nomor, perihal, pengirimTujuan, tanggal, jenis, status, pdfUrl } = req.body;
+    const { nomor, perihal, pengirimTujuan, tanggal, jenis, pdfUrl, tanggalSurat } = req.body;
+    const status = jenis === "Keluar" ? "Terkirim" : "Terarsip";
     const args: Record<string, unknown> = { nomor, perihal, pengirimTujuan, tanggal, jenis, status };
     if (pdfUrl && typeof pdfUrl === "string" && pdfUrl.trim()) {
       args.pdfUrl = pdfUrl.trim();
+    }
+    if (tanggalSurat && typeof tanggalSurat === "string" && tanggalSurat.trim()) {
+      args.tanggalSurat = tanggalSurat.trim();
     }
     const data = await convexMutation("arsipSurat:create", args);
     res.status(201).json(data);
@@ -182,9 +319,121 @@ app.post("/api/arsip-surat", async (req: Request, res: Response) => {
   }
 });
 
+app.delete("/api/arsip-surat", async (_req: Request, res: Response) => {
+  try {
+    const data = await convexQuery("arsipSurat:list");
+    for (const item of data) {
+      await convexMutation("arsipSurat:remove", { id: item._id });
+    }
+    res.json({ deleted: data.length });
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to delete all" });
+  }
+});
+
 app.delete("/api/arsip-surat/:id", async (req: Request, res: Response) => {
   try {
     await convexMutation("arsipSurat:remove", { id: req.params.id });
+    res.status(204).end();
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to delete" });
+  }
+});
+
+// ── Pengaduan Masyarakat (Convex proxy) ──────────────────────────────────────
+app.get("/api/pengaduan-masyarakat", async (_req: Request, res: Response) => {
+  try {
+    const data = await convexQuery("pengaduanMasyarakat:list");
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to fetch" });
+  }
+});
+
+app.post("/api/pengaduan-masyarakat", async (req: Request, res: Response) => {
+  try {
+    const { nama, email, telepon, judul, isi, lokasi, imageUrl, status } = req.body;
+    const args: Record<string, unknown> = {
+      nama: nama || "",
+      email: email || "",
+      telepon: telepon || "",
+      judul: judul || "",
+      isi: isi || "",
+      status: status || "Baru",
+    };
+    if (lokasi && typeof lokasi === "string" && lokasi.trim()) args.lokasi = lokasi.trim();
+    if (imageUrl && typeof imageUrl === "string" && imageUrl.trim()) args.imageUrl = imageUrl.trim();
+    console.log("[pengaduan-masyarakat] creating with args:", JSON.stringify(args));
+    const data = await convexMutation("pengaduanMasyarakat:create", args);
+    res.status(201).json(data);
+  } catch (e: any) {
+    console.error("[pengaduan-masyarakat] error:", e?.message);
+    res.status(500).json({ message: e?.message || "Failed to create" });
+  }
+});
+
+app.patch("/api/pengaduan-masyarakat/:id/status", async (req: Request, res: Response) => {
+  try {
+    await convexMutation("pengaduanMasyarakat:updateStatus", { id: req.params.id, status: req.body.status });
+    res.status(204).end();
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to update" });
+  }
+});
+
+app.delete("/api/pengaduan-masyarakat/:id", async (req: Request, res: Response) => {
+  try {
+    await convexMutation("pengaduanMasyarakat:remove", { id: req.params.id });
+    res.status(204).end();
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to delete" });
+  }
+});
+
+// ── Whistle Blowing (Convex proxy) ────────────────────────────────────────────
+app.get("/api/whistle-blowing", async (_req: Request, res: Response) => {
+  try {
+    const data = await convexQuery("whistleBlowing:list");
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to fetch" });
+  }
+});
+
+app.post("/api/whistle-blowing", async (req: Request, res: Response) => {
+  try {
+    const { nama, email, telepon, judul, isi, imageUrl, isAnonymous, status } = req.body;
+    const args: Record<string, unknown> = {
+      nama: nama || "",
+      email: email || "",
+      telepon: telepon || "",
+      judul: judul || "",
+      isi: isi || "",
+      isAnonymous: !!isAnonymous,
+      status: status || "Baru",
+    };
+    if (imageUrl && typeof imageUrl === "string" && imageUrl.trim()) args.imageUrl = imageUrl.trim();
+    console.log("[whistle-blowing] creating with args:", JSON.stringify(args));
+    const data = await convexMutation("whistleBlowing:create", args);
+    res.status(201).json(data);
+  } catch (e: any) {
+    console.error("[whistle-blowing] error:", e?.message);
+    res.status(500).json({ message: e?.message || "Failed to create" });
+  }
+});
+
+app.patch("/api/whistle-blowing/:id/status", async (req: Request, res: Response) => {
+  try {
+    await convexMutation("whistleBlowing:updateStatus", { id: req.params.id, status: req.body.status });
+    res.status(204).end();
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to update" });
+  }
+});
+
+app.delete("/api/whistle-blowing/:id", async (req: Request, res: Response) => {
+  try {
+    await convexMutation("whistleBlowing:remove", { id: req.params.id });
     res.status(204).end();
   } catch (e: any) {
     res.status(500).json({ message: e?.message || "Failed to delete" });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,10 +18,33 @@ export default function WhistleBlowingPage() {
   const [anonim, setAnonim] = useState(false);
   const [form, setForm] = useState({ nama: "", kontak: "", judul: "", kategori: "", uraian: "" });
   const [loading, setLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setImageUrl(data.url);
+      toast({ title: "Gambar berhasil diunggah" });
+    } catch (err: any) {
+      toast({ title: "Upload gagal", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!anonim && (!form.nama || !form.kontak)) {
       toast({ title: "Data belum lengkap", description: "Nama dan kontak wajib diisi jika tidak anonim.", variant: "destructive" });
@@ -32,11 +55,34 @@ export default function WhistleBlowingPage() {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      toast({ title: "Laporan WBS terkirim", description: "Nomor tiket: WBS-" + Math.floor(10000 + Math.random() * 90000) });
+    try {
+      const res = await fetch("/api/whistle-blowing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nama: anonim ? "Anonim" : form.nama,
+          email: (!anonim && form.kontak.includes("@")) ? form.kontak : "",
+          telepon: (!anonim && !form.kontak.includes("@")) ? form.kontak : "",
+          judul: form.judul,
+          isi: form.uraian,
+          imageUrl: imageUrl || undefined,
+          isAnonymous: anonim,
+          status: "Baru",
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ message: "Gagal mengirim laporan" }));
+        throw new Error(errData.message || "Gagal mengirim laporan");
+      }
+      toast({ title: "Laporan WBS berhasil terkirim", description: "Terima kasih atas keberanian Anda melaporkan." });
       setForm({ nama: "", kontak: "", judul: "", kategori: "", uraian: "" });
+      setImageUrl("");
+      setAnonim(false);
+    } catch (err: any) {
+      toast({ title: "Gagal mengirim", description: err.message, variant: "destructive" });
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -94,8 +140,17 @@ export default function WhistleBlowingPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="lampiran">Lampiran (opsional)</Label>
-                  <Input id="lampiran" type="file" className="rounded-md border-slate-200 py-2 text-sm" />
-                  <p className="text-xs text-[#5f5e5e]">Maksimal 5 MB. Format: PDF, JPG, PNG.</p>
+                  <input ref={fileRef} id="lampiran" type="file" accept="image/*,.pdf" className="hidden" onChange={handleUpload} />
+                  <div className="flex items-center gap-3">
+                    <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="border-slate-200 text-xs">
+                      {uploading ? "Mengunggah…" : "Pilih File"}
+                    </Button>
+                    {imageUrl ? (
+                      <span className="text-xs text-green-600">File terunggah ✓</span>
+                    ) : (
+                      <span className="text-xs text-slate-400">Maks. 5 MB. JPG/PNG/PDF</span>
+                    )}
+                  </div>
                 </div>
                 <Button type="submit" disabled={loading} className="mt-2 w-full rounded-lg bg-[#001e40] py-3 text-sm text-white hover:bg-[#001e40]/90">
                   <Send className="mr-2 h-4 w-4" /> {loading ? "Mengirim..." : "Kirim Laporan"}

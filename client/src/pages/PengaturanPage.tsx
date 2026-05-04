@@ -1,10 +1,91 @@
+import { useState } from "react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useEffect } from "react";
 
 export default function PengaturanPage() {
+  const { toast } = useToast();
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const settings = useConvexQuery(api.settings.getAll);
+  const setMultipleSettings = useConvexMutation(api.settings.setMultiple);
+
+  // Settings state
+  const [formData, setFormData] = useState({
+    namaLengkap: "Admin Putik Cemerlang",
+    emailAdmin: "admin@putik-cemerlang.malangkab.go.id",
+    jabatan: "Kepala Bidang Informasi Maritim",
+    telepon: "+62 341 000 0000",
+    namaPortal: "Putik Cemerlang",
+    instansi: "Dinas Kelautan & Perikanan Kabupaten Malang",
+    alamat: "Jl. Panji No. 158, Kepanjen, Kabupaten Malang",
+    emailPublik: "info@dkp.malangkab.go.id"
+  });
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load from Convex
+  useEffect(() => {
+    if (settings) {
+      setFormData(prev => ({
+        namaLengkap: settings.namaLengkap || prev.namaLengkap,
+        emailAdmin: settings.emailAdmin || prev.emailAdmin,
+        jabatan: settings.jabatan || prev.jabatan,
+        telepon: settings.telepon || prev.telepon,
+        namaPortal: settings.namaPortal || prev.namaPortal,
+        instansi: settings.instansi || prev.instansi,
+        alamat: settings.alamat || prev.alamat,
+        emailPublik: settings.emailPublik || prev.emailPublik,
+      }));
+    }
+  }, [settings]);
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    try {
+      await setMultipleSettings({ settings: formData });
+      toast({ title: "Pengaturan berhasil disimpan!" });
+    } catch (err: any) {
+      toast({ title: "Gagal menyimpan pengaturan", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const updatePassword = useConvexMutation(api.settings.updatePassword);
+
+  const handleUpdatePassword = async () => {
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      toast({ title: "Semua kolom kata sandi harus diisi", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Kata sandi baru tidak cocok", variant: "destructive" });
+      return;
+    }
+    
+    setIsUpdating(true);
+    try {
+      await updatePassword({ oldPassword, newPassword });
+      toast({ title: "Kata sandi berhasil diubah!" });
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      toast({ title: err.message || "Gagal mengubah kata sandi", variant: "destructive" });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <header className="mb-10 flex items-end justify-between">
@@ -18,9 +99,11 @@ export default function PengaturanPage() {
         </div>
         <Button
           data-testid="button-simpan-pengaturan"
+          onClick={handleSaveSettings}
+          disabled={isSaving}
           className="rounded-lg bg-[#001e40] px-8 py-2.5 text-sm text-white shadow-[0px_1px_2px_#0000000d] hover:bg-[#001e40]/90 [font-family:'Public_Sans',Helvetica]"
         >
-          Simpan Perubahan
+          {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
         </Button>
       </header>
 
@@ -38,7 +121,8 @@ export default function PengaturanPage() {
                 </label>
                 <Input
                   data-testid="input-nama-admin"
-                  defaultValue="Admin Putik Cemerlang"
+                  value={formData.namaLengkap}
+                  onChange={(e) => setFormData({ ...formData, namaLengkap: e.target.value })}
                   className="rounded-md border-slate-200 text-sm [font-family:'Inter',Helvetica]"
                 />
               </div>
@@ -48,7 +132,8 @@ export default function PengaturanPage() {
                 </label>
                 <Input
                   data-testid="input-email-admin"
-                  defaultValue="admin@putik-cemerlang.malangkab.go.id"
+                  value={formData.emailAdmin}
+                  onChange={(e) => setFormData({ ...formData, emailAdmin: e.target.value })}
                   className="rounded-md border-slate-200 text-sm [font-family:'Inter',Helvetica]"
                 />
               </div>
@@ -58,7 +143,8 @@ export default function PengaturanPage() {
                 </label>
                 <Input
                   data-testid="input-jabatan"
-                  defaultValue="Kepala Bidang Informasi Maritim"
+                  value={formData.jabatan}
+                  onChange={(e) => setFormData({ ...formData, jabatan: e.target.value })}
                   className="rounded-md border-slate-200 text-sm [font-family:'Inter',Helvetica]"
                 />
               </div>
@@ -68,7 +154,8 @@ export default function PengaturanPage() {
                 </label>
                 <Input
                   data-testid="input-telepon"
-                  defaultValue="+62 341 000 0000"
+                  value={formData.telepon}
+                  onChange={(e) => setFormData({ ...formData, telepon: e.target.value })}
                   className="rounded-md border-slate-200 text-sm [font-family:'Inter',Helvetica]"
                 />
               </div>
@@ -89,7 +176,8 @@ export default function PengaturanPage() {
                 </label>
                 <Input
                   data-testid="input-nama-portal"
-                  defaultValue="Putik Cemerlang"
+                  value={formData.namaPortal}
+                  onChange={(e) => setFormData({ ...formData, namaPortal: e.target.value })}
                   className="rounded-md border-slate-200 text-sm [font-family:'Inter',Helvetica]"
                 />
               </div>
@@ -99,7 +187,8 @@ export default function PengaturanPage() {
                 </label>
                 <Input
                   data-testid="input-instansi"
-                  defaultValue="Dinas Kelautan & Perikanan Kabupaten Malang"
+                  value={formData.instansi}
+                  onChange={(e) => setFormData({ ...formData, instansi: e.target.value })}
                   className="rounded-md border-slate-200 text-sm [font-family:'Inter',Helvetica]"
                 />
               </div>
@@ -109,7 +198,8 @@ export default function PengaturanPage() {
                 </label>
                 <Input
                   data-testid="input-alamat"
-                  defaultValue="Jl. Panji No. 158, Kepanjen, Kabupaten Malang"
+                  value={formData.alamat}
+                  onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
                   className="rounded-md border-slate-200 text-sm [font-family:'Inter',Helvetica]"
                 />
               </div>
@@ -119,7 +209,8 @@ export default function PengaturanPage() {
                 </label>
                 <Input
                   data-testid="input-email-publik"
-                  defaultValue="info@dkp.malangkab.go.id"
+                  value={formData.emailPublik}
+                  onChange={(e) => setFormData({ ...formData, emailPublik: e.target.value })}
                   className="rounded-md border-slate-200 text-sm [font-family:'Inter',Helvetica]"
                 />
               </div>
@@ -141,6 +232,8 @@ export default function PengaturanPage() {
                 <Input
                   data-testid="input-sandi-lama"
                   type="password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
                   placeholder="••••••••"
                   className="rounded-md border-slate-200 text-sm [font-family:'Inter',Helvetica]"
                 />
@@ -153,6 +246,8 @@ export default function PengaturanPage() {
                 <Input
                   data-testid="input-sandi-baru"
                   type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
                   className="rounded-md border-slate-200 text-sm [font-family:'Inter',Helvetica]"
                 />
@@ -164,6 +259,8 @@ export default function PengaturanPage() {
                 <Input
                   data-testid="input-sandi-konfirmasi"
                   type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   className="rounded-md border-slate-200 text-sm [font-family:'Inter',Helvetica]"
                 />
@@ -173,9 +270,11 @@ export default function PengaturanPage() {
             <Button
               data-testid="button-ganti-sandi"
               variant="outline"
+              onClick={handleUpdatePassword}
+              disabled={isUpdating}
               className="rounded-lg border-[#001e40] text-[#001e40] hover:bg-slate-50 [font-family:'Inter',Helvetica] text-sm"
             >
-              Ganti Kata Sandi
+              {isUpdating ? "Menyimpan..." : "Ganti Kata Sandi"}
             </Button>
           </CardContent>
         </Card>

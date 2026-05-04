@@ -29,14 +29,17 @@ export async function uploadToCloudinary(
 
 export async function uploadPdfToCloudinary(
   buffer: Buffer,
-  isPdf: boolean
+  isPdf: boolean,
+  originalFilename: string
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     cloudinary.uploader
       .upload_stream(
         {
           folder: "putik-cemerlang/arsip-surat",
-          resource_type: isPdf ? "raw" : "image",
+          resource_type: "auto", // auto detects PDF/image and avoids raw-type 401
+          type: "upload",
+          access_mode: "public",
           public_id: `arsip_${Date.now()}`,
         },
         (error, result) => {

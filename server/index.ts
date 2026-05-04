@@ -1,9 +1,14 @@
+import dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
+
+// Load .env.local so CLOUDINARY_* and other secrets are available on the server
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import path from "path";
-import fs from "fs";
 
 const app = express();
 const httpServer = createServer(app);

@@ -17,6 +17,8 @@ import KontenSliderPage from "@/pages/KontenSliderPage";
 import PengaturanPage from "@/pages/PengaturanPage";
 import PengaduanMasyarakatPage from "@/pages/PengaduanMasyarakatPage";
 import WhistleBlowingPage from "@/pages/WhistleBlowingPage";
+import PengaduanMasyarakatAdminPage from "@/pages/PengaduanMasyarakatAdminPage";
+import WhistleBlowingAdminPage from "@/pages/WhistleBlowingAdminPage";
 import StatistikLayananPage from "@/pages/StatistikLayananPage";
 import StatistikPengunjungPage from "@/pages/StatistikPengunjungPage";
 
@@ -45,6 +47,8 @@ function Router() {
       <Route path="/admin/statistik-layanan" component={() => <ProtectedRoute component={StatistikLayananPage} />} />
       <Route path="/admin/statistik-pengunjung" component={() => <ProtectedRoute component={StatistikPengunjungPage} />} />
       <Route path="/admin/pengaturan" component={() => <ProtectedRoute component={PengaturanPage} />} />
+      <Route path="/admin/pengaduan-masyarakat" component={() => <ProtectedRoute component={PengaduanMasyarakatAdminPage} />} />
+      <Route path="/admin/whistle-blowing" component={() => <ProtectedRoute component={WhistleBlowingAdminPage} />} />
       <Route path="/pengaduan-masyarakat" component={PengaduanMasyarakatPage} />
       <Route path="/whistle-blowing" component={WhistleBlowingPage} />
       <Route component={NotFound} />

@@ -5,6 +5,7 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -26,6 +27,7 @@ interface ArsipItem {
   perihal: string;
   pengirimTujuan: string;
   tanggal: string;
+  tanggalSurat?: string;
   jenis: Jenis;
   status: Status;
   pdfUrl?: string;
@@ -52,8 +54,11 @@ function formatTanggal(iso: string) {
 const defaultForm = {
   nomor: "", perihal: "", pengirimTujuan: "",
   tanggal: new Date().toISOString().slice(0, 10),
-  jenis: "Masuk" as Jenis, status: "Belum Dibaca" as Status, pdfUrl: "",
+  tanggalSurat: "",
+  jenis: "Masuk" as Jenis, status: "Terarsip" as Status, pdfUrl: "",
 };
+
+const statusByJenis = (jenis: Jenis): Status => jenis === "Masuk" ? "Terarsip" : "Terkirim";
 
 export default function ArsipSuratPage() {
   const { toast } = useToast();
@@ -66,6 +71,7 @@ export default function ArsipSuratPage() {
   const [form, setForm] = useState(defaultForm);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { data: arsipList = [], isLoading } = useQuery<ArsipItem[]>({
     queryKey: ["/api/arsip-surat"],
@@ -90,6 +96,15 @@ export default function ArsipSuratPage() {
       toast({ title: "Surat dihapus dari arsip" });
     },
     onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
+  });
+
+  const removeAllMut = useMutation({
+    mutationFn: () => apiRequest("DELETE", "/api/arsip-surat"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/arsip-surat"] });
+      toast({ title: "Semua surat berhasil dihapus" });
+    },
+    onError: () => toast({ title: "Gagal menghapus semua surat", variant: "destructive" }),
   });
 
   const handleUploadPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,12 +133,45 @@ export default function ArsipSuratPage() {
       toast({ title: "Lengkapi semua field wajib", variant: "destructive" });
       return;
     }
-    createMut.mutate(form);
+    createMut.mutate({ ...form, status: statusByJenis(form.jenis) });
   };
 
   const handleDelete = (id: string) => {
     if (!confirm("Hapus surat ini dari arsip?")) return;
     removeMut.mutate(id);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Hapus ${selectedIds.size} surat yang dipilih? Tindakan ini tidak bisa dibatalkan.`)) return;
+    const ids = Array.from(selectedIds);
+    setSelectedIds(new Set());
+    await Promise.all(ids.map((id) => apiRequest("DELETE", `/api/arsip-surat/${id}`)));
+    queryClient.invalidateQueries({ queryKey: ["/api/arsip-surat"] });
+    toast({ title: `${ids.length} surat berhasil dihapus` });
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllFiltered = () => {
+    if (selectedIds.size === filtered.length && filtered.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((f) => f._id)));
+    }
+  };
+
+  const handleDeleteAll = () => {
+    if (arsipList.length === 0) return;
+    if (!confirm(`Hapus semua ${arsipList.length} surat dari arsip? Tindakan ini tidak bisa dibatalkan.`)) return;
+    removeAllMut.mutate();
   };
 
   const filtered = arsipList.filter((item) => {
@@ -139,44 +187,70 @@ export default function ArsipSuratPage() {
     return matchSearch && matchJenis && matchBulan && matchTahun;
   });
 
+  const [exporting, setExporting] = useState(false);
+
   const handleExportZip = async () => {
     if (filtered.length === 0) {
       toast({ title: "Tidak ada data untuk diekspor", variant: "destructive" });
       return;
     }
-    const zip = new JSZip();
-    const folderName = `Arsip_Surat_${filterBulan !== "Semua" ? `${filterBulan}_${filterTahun}` : filterTahun !== "Semua" ? filterTahun : "Semua"}`;
-    const folder = zip.folder(folderName);
-    if (!folder) return;
+    setExporting(true);
+    toast({ title: `Mengunduh ${filtered.length} surat, mohon tunggu…` });
 
-    let csv = "Nomor Surat,Perihal,Pengirim/Tujuan,Tanggal,Jenis,Status,PDF_URL\n";
-    for (const item of filtered) {
-      csv += `"${item.nomor}","${item.perihal}","${item.pengirimTujuan}","${formatTanggal(item.tanggal)}","${item.jenis}","${item.status}","${item.pdfUrl || ""}"\n`;
-      if (item.pdfUrl) {
-        try {
-          const res = await fetch(item.pdfUrl);
-          if (res.ok) {
-            const blob = await res.blob();
-            const ext = item.pdfUrl.split("?")[0].split(".").pop() || "pdf";
-            const safeName = item.nomor.replace(/[^a-zA-Z0-9]/g, "_");
-            folder.file(`${safeName}.${ext}`, blob);
-          } else {
-            folder.file(`${item.nomor.replace(/[^a-zA-Z0-9]/g, "_")}_link.txt`, item.pdfUrl);
+    try {
+      const zip = new JSZip();
+      const bulanNames = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      const bulanLabel = filterBulan !== "Semua" ? bulanNames[parseInt(filterBulan)] : "";
+      const tahunLabel = filterTahun !== "Semua" ? filterTahun : "";
+      const folderName = `Arsip_Surat${bulanLabel ? `_${bulanLabel}` : ""}${tahunLabel ? `_${tahunLabel}` : "_Semua"}`;
+      const folder = zip.folder(folderName)!;
+
+      let csv = "No,Nomor Surat,Perihal,Pengirim/Tujuan,Tanggal Surat,Tanggal Arsip,Jenis,Status,File\n";
+      let pdfCount = 0;
+
+      for (let i = 0; i < filtered.length; i++) {
+        const item = filtered[i];
+        const safeName = item.nomor.replace(/[^a-zA-Z0-9_\-]/g, "_");
+
+        if (item.pdfUrl) {
+          try {
+            // Build absolute URL for local files
+            const fetchUrl = item.pdfUrl.startsWith("http")
+              ? item.pdfUrl
+              : `${window.location.origin}${item.pdfUrl}`;
+
+            const res = await fetch(fetchUrl);
+            if (res.ok) {
+              const arrayBuf = await res.arrayBuffer();
+              const ext = item.pdfUrl.split("?")[0].split(".").pop() || "pdf";
+              const fileName = `${String(i + 1).padStart(2, "0")}_${safeName}.${ext}`;
+              folder.file(fileName, arrayBuf);
+              csv += `${i + 1},"${item.nomor}","${item.perihal}","${item.pengirimTujuan}","${item.tanggalSurat || "-"}","${formatTanggal(item.tanggal)}","${item.jenis}","${item.status}","${fileName}"\n`;
+              pdfCount++;
+              continue;
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch PDF for ${item.nomor}:`, err);
           }
-        } catch {
-          folder.file(`${item.nomor.replace(/[^a-zA-Z0-9]/g, "_")}_link.txt`, item.pdfUrl);
         }
+        csv += `${i + 1},"${item.nomor}","${item.perihal}","${item.pengirimTujuan}","${item.tanggalSurat || "-"}","${formatTanggal(item.tanggal)}","${item.jenis}","${item.status}",""\n`;
       }
+
+      folder.file("index.csv", csv);
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `${folderName}.zip`);
+      toast({ title: `ZIP berhasil diekspor — ${pdfCount} PDF dari ${filtered.length} surat` });
+    } catch (err: any) {
+      console.error("Export ZIP error:", err);
+      toast({ title: "Gagal membuat ZIP", description: err?.message, variant: "destructive" });
+    } finally {
+      setExporting(false);
     }
-    folder.file("index.csv", csv);
-    const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, `${folderName}.zip`);
-    toast({ title: `ZIP berhasil diekspor (${filtered.length} surat)` });
   };
 
-  const masukCount = arsipList.filter((a) => a.jenis === "Masuk").length;
-  const keluarCount = arsipList.filter((a) => a.jenis === "Keluar").length;
-  const belumDibaca = arsipList.filter((a) => a.status === "Belum Dibaca").length;
+  const masukCount = filtered.filter((a) => a.jenis === "Masuk").length;
+  const keluarCount = filtered.filter((a) => a.jenis === "Keluar").length;
+  const terkirimCount = filtered.filter((a) => a.status === "Terkirim").length;
 
   return (
     <AdminLayout>
@@ -199,10 +273,10 @@ export default function ArsipSuratPage() {
       {/* Stats */}
       <div className="mb-6 grid grid-cols-4 gap-4">
         {[
-          { label: "Total Surat", value: arsipList.length, color: "text-[#001e40]" },
+          { label: "Total Surat", value: filtered.length, color: "text-[#001e40]" },
           { label: "Surat Masuk", value: masukCount, color: "text-slate-700" },
           { label: "Surat Keluar", value: keluarCount, color: "text-purple-700" },
-          { label: "Belum Dibaca", value: belumDibaca, color: "text-amber-600" },
+          { label: "Terkirim", value: terkirimCount, color: "text-blue-700" },
         ].map((s, i) => (
           <Card key={i} data-testid={`card-stat-arsip-${i}`} className="rounded-xl border border-[#c3c6d1] bg-white shadow-[0px_1px_2px_#0000000d]">
             <CardContent className="p-5">
@@ -265,9 +339,31 @@ export default function ArsipSuratPage() {
               variant="outline"
               size="sm"
               onClick={handleExportZip}
+              disabled={exporting}
               className="ml-auto rounded-md border-slate-200 text-xs text-[#001e40] hover:bg-slate-50"
             >
-              Export ZIP
+              {exporting ? "Mengunduh…" : "Export ZIP"}
+            </Button>
+            {selectedIds.size > 0 && (
+              <Button
+                data-testid="button-hapus-terpilih"
+                variant="outline"
+                size="sm"
+                onClick={handleDeleteSelected}
+                className="rounded-md border-red-200 text-xs text-[#ba1a1a] hover:bg-red-50"
+              >
+                Hapus Terpilih ({selectedIds.size})
+              </Button>
+            )}
+            <Button
+              data-testid="button-hapus-semua-arsip"
+              variant="outline"
+              size="sm"
+              onClick={handleDeleteAll}
+              disabled={removeAllMut.isPending || arsipList.length === 0}
+              className="rounded-md border-red-200 text-xs text-[#ba1a1a] hover:bg-red-50"
+            >
+              {removeAllMut.isPending ? "Menghapus…" : "Hapus Semua"}
             </Button>
           </div>
 
@@ -275,29 +371,43 @@ export default function ArsipSuratPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-100">
-                  {["No. Surat", "Perihal", "Pengirim/Tujuan", "Tanggal", "Jenis", "Status", "Aksi"].map((h) => (
+                  <th className="pb-3 pr-2 text-left">
+                    <Checkbox
+                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                      onCheckedChange={selectAllFiltered}
+                      aria-label="Pilih semua"
+                      className="border-slate-300"
+                    />
+                  </th>
+                  {["No. Surat", "Perihal", "Pengirim/Tujuan", "Tgl Surat", "Tgl Arsip", "Jenis", "Status", "Aksi"].map((h) => (
                     <th key={h} className="pb-3 text-left text-xs font-medium text-[#5f5e5e] [font-family:'Inter',Helvetica]">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                <AnimatePresence mode="popLayout">
-                  {filtered.map((item) => (
-                    <motion.tr
-                      key={item._id}
-                      layout
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      data-testid={`row-arsip-${item._id}`}
-                      className="border-b border-slate-50 hover:bg-slate-50"
-                    >
-                      <td className="py-3 pr-4 text-xs font-mono text-[#3a5f94] whitespace-nowrap">{item.nomor}</td>
+                {filtered.map((item) => (
+                  <tr
+                    key={item._id}
+                    data-testid={`row-arsip-${item._id}`}
+                    className="border-b border-slate-50 hover:bg-slate-50"
+                  >
+                    <td className="py-3 pr-2">
+                      <Checkbox
+                        checked={selectedIds.has(item._id)}
+                        onCheckedChange={() => toggleSelect(item._id)}
+                        aria-label={`Pilih ${item.nomor}`}
+                        className="border-slate-300"
+                      />
+                    </td>
+                    <td className="py-3 pr-4 text-xs font-mono text-[#3a5f94] whitespace-nowrap">{item.nomor}</td>
                       <td className="max-w-[200px] py-3 pr-4">
                         <p className="line-clamp-2 text-sm text-[#191c1e] [font-family:'Inter',Helvetica]">{item.perihal}</p>
                       </td>
                       <td className="max-w-[180px] py-3 pr-4">
                         <p className="line-clamp-2 text-sm text-[#5f5e5e] [font-family:'Inter',Helvetica]">{item.pengirimTujuan}</p>
+                      </td>
+                      <td className="py-3 pr-4 text-sm text-[#5f5e5e] whitespace-nowrap [font-family:'Inter',Helvetica]">
+                        {item.tanggalSurat ? formatTanggal(item.tanggalSurat) : "-"}
                       </td>
                       <td className="py-3 pr-4 text-sm text-[#5f5e5e] whitespace-nowrap [font-family:'Inter',Helvetica]">
                         {formatTanggal(item.tanggal)}
@@ -327,9 +437,8 @@ export default function ArsipSuratPage() {
                           </button>
                         </div>
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
-                </AnimatePresence>
               </tbody>
             </table>
 
@@ -368,6 +477,10 @@ export default function ArsipSuratPage() {
               <label htmlFor="input-pengirim" className="text-xs text-[#5f5e5e]">Pengirim / Tujuan *</label>
               <Input id="input-pengirim" required aria-required="true" data-testid="input-pengirim" value={form.pengirimTujuan} onChange={(e) => setForm((f) => ({ ...f, pengirimTujuan: e.target.value }))} placeholder="Nama instansi / pengirim" className="border-slate-200 text-sm" />
             </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="input-tanggal-surat" className="text-xs text-[#5f5e5e]">Tanggal Surat</label>
+              <Input id="input-tanggal-surat" data-testid="input-tanggal-surat" type="date" value={form.tanggalSurat} onChange={(e) => setForm((f) => ({ ...f, tanggalSurat: e.target.value }))} className="border-slate-200 text-sm" />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
                 <label htmlFor="input-tanggal" className="text-xs text-[#5f5e5e]">Tanggal</label>
@@ -375,7 +488,10 @@ export default function ArsipSuratPage() {
               </div>
               <div className="flex flex-col gap-1">
                 <label htmlFor="select-jenis" className="text-xs text-[#5f5e5e]">Jenis Surat</label>
-                <Select value={form.jenis} onValueChange={(v) => setForm((f) => ({ ...f, jenis: v as Jenis }))}>
+                <Select value={form.jenis} onValueChange={(v) => {
+                  const jenis = v as Jenis;
+                  setForm((f) => ({ ...f, jenis, status: statusByJenis(jenis) }));
+                }}>
                   <SelectTrigger id="select-jenis" data-testid="select-jenis" className="border-slate-200 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Masuk">Masuk</SelectItem>
@@ -389,7 +505,6 @@ export default function ArsipSuratPage() {
               <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v as Status }))}>
                 <SelectTrigger id="select-status" data-testid="select-status" className="border-slate-200 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Belum Dibaca">Belum Dibaca</SelectItem>
                   <SelectItem value="Terarsip">Terarsip</SelectItem>
                   <SelectItem value="Terkirim">Terkirim</SelectItem>
                 </SelectContent>
@@ -431,7 +546,8 @@ export default function ArsipSuratPage() {
                 { label: "Nomor Surat", val: viewItem.nomor },
                 { label: "Perihal", val: viewItem.perihal },
                 { label: "Pengirim / Tujuan", val: viewItem.pengirimTujuan },
-                { label: "Tanggal", val: formatTanggal(viewItem.tanggal) },
+                { label: "Tanggal Surat", val: viewItem.tanggalSurat ? formatTanggal(viewItem.tanggalSurat) : "-" },
+                { label: "Tanggal Arsip", val: formatTanggal(viewItem.tanggal) },
                 { label: "Jenis", val: viewItem.jenis },
                 { label: "Status", val: viewItem.status },
               ].map((row) => (
@@ -440,12 +556,50 @@ export default function ArsipSuratPage() {
                   <span className="font-medium text-[#191c1e]">{row.val}</span>
                 </div>
               ))}
-              {viewItem.pdfUrl && (
-                <div className="flex gap-2">
-                  <span className="w-40 shrink-0 text-xs text-[#5f5e5e]">Dokumen Scan</span>
-                  <a href={viewItem.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-[#3a5f94] underline">Buka Dokumen</a>
-                </div>
-              )}
+              {viewItem.pdfUrl && (() => {
+                const raw = viewItem.pdfUrl!;
+                // Convex storage URLs are public; old Cloudinary URLs need proxy
+                const needsProxy = raw.includes("cloudinary.com");
+                const viewUrl = needsProxy
+                  ? `/api/pdf-proxy?url=${encodeURIComponent(raw)}`
+                  : raw;
+                const isImage = /\.(jpe?g|png|gif|webp|bmp|svg)(\?|$)/i.test(raw);
+                return (
+                  <>
+                    <div className="flex gap-2">
+                      <span className="w-40 shrink-0 text-xs text-[#5f5e5e]">Dokumen Scan</span>
+                      <a
+                        href={viewUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#3a5f94] underline hover:text-[#001e40]"
+                      >
+                        Buka di Tab Baru
+                      </a>
+                      <a
+                        href={viewUrl}
+                        download
+                        className="ml-2 text-[#3a5f94] underline hover:text-[#001e40]"
+                      >
+                        Download
+                      </a>
+                    </div>
+                    {isImage ? (
+                      <img
+                        src={viewUrl}
+                        alt="Scan dokumen"
+                        className="mt-2 max-h-[400px] w-full rounded-md border border-slate-200 object-contain"
+                      />
+                    ) : (
+                      <iframe
+                        src={viewUrl}
+                        title="Preview PDF"
+                        className="mt-2 h-[400px] w-full rounded-md border border-slate-200"
+                      />
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
           <DialogFooter>
