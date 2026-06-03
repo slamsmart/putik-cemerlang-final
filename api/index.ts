@@ -6,6 +6,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import multer from "multer";
 import fs from "fs";
 import { randomBytes } from "crypto";
+import { generatePutikChatReply } from "../server/nvidiaChatbot";
 
 const app = express();
 
@@ -615,7 +616,6 @@ app.post("/api/chatbot", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Pesan kosong" });
     }
 
-    const { generatePutikChatReply } = await import("../server/nvidiaChatbot");
     const reply = await generatePutikChatReply(message.trim());
     res.json(reply);
   } catch (e: any) {
