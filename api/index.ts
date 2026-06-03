@@ -6,7 +6,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import multer from "multer";
 import fs from "fs";
 import { randomBytes } from "crypto";
-import { generatePutikChatReply } from "./_lib/chatbot";
+import { generatePutikChatReply } from "./_lib/chatbot.js";
 
 const app = express();
 
