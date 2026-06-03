@@ -165,44 +165,32 @@ export async function registerRoutes(httpServer: Server | null, app: Express): P
     }
   });
 
-  // ── PDF/Scan Upload (via Convex file storage — persistent & publicly accessible) ──
+  // ── PDF/Scan Upload (Cloudinary object storage) ───────────────────────────
 
   app.post("/api/upload-pdf", uploadPdf.single("file"), async (req: Request, res: Response) => {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
+    const cloudinaryConfigured =
+      (process.env.CLOUDINARY_CLOUD_NAME || "").trim() &&
+      (process.env.CLOUDINARY_API_KEY || "").trim() &&
+      (process.env.CLOUDINARY_API_SECRET || "").trim();
+
+    if (!cloudinaryConfigured) {
+      return res.status(500).json({ message: "Cloudinary belum dikonfigurasi di environment lokal." });
+    }
+
     try {
-      const { convexMutation: cMut, convexQuery: cQuery } = await import("./convexClient");
-
-      // Step 1: Get upload URL from Convex
-      const uploadUrl = await cMut("arsipSurat:generateUploadUrl", {});
-
-      // Step 2: Upload file to Convex storage
-      const uploadResp = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": req.file.mimetype },
-        body: new Uint8Array(req.file.buffer),
-      });
-
-      if (!uploadResp.ok) {
-        throw new Error(`Convex storage upload failed: ${uploadResp.statusText}`);
-      }
-
-      const uploadResult = await uploadResp.json();
-      const storageId = uploadResult.storageId;
-
-      // Step 3: Construct the public serving URL directly
-      const convexUrl = process.env.CONVEX_URL || "https://fabulous-lemur-912.convex.cloud";
-      const fileUrl = `${convexUrl}/api/storage/${storageId}`;
-
-      return res.json({ url: fileUrl });
+      const isPdf = req.file.mimetype === "application/pdf";
+      const { uploadPdfToCloudinary } = await import("./cloudinary");
+      const url = await uploadPdfToCloudinary(req.file.buffer, isPdf, req.file.originalname);
+      return res.json({ url });
     } catch (e: any) {
-      console.error("Convex file upload error:", e?.message);
-      // Fallback to local storage
+      console.error("Cloudinary PDF upload error:", e?.message);
       try {
         const url = saveLocal(req.file.buffer, req.file.originalname);
-        res.json({ url, note: "File disimpan lokal (Convex storage gagal)." });
+        return res.json({ url, note: "File disimpan lokal (Cloudinary gagal)." });
       } catch (localErr: any) {
-        res.status(500).json({ message: localErr?.message || "Upload failed" });
+        return res.status(500).json({ message: localErr?.message || "Upload failed" });
       }
     }
   });
@@ -214,7 +202,28 @@ export async function registerRoutes(httpServer: Server | null, app: Express): P
     if (!url) return res.status(400).json({ message: "Missing url parameter" });
 
     try {
-      const response = await fetch(url);
+      let targetUrl = url;
+      const convexStorageMatch = url.match(/^(https:\/\/[^/]+\.convex\.cloud)\/api\/storage\/([^/?#]+)/i);
+      if (convexStorageMatch) {
+        const [, convexOrigin, storageId] = convexStorageMatch;
+        const urlResp = await fetch(`${convexOrigin}/api/query`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            path: "arsipSurat:getFileUrl",
+            args: { storageId },
+          }),
+        });
+        if (urlResp.ok) {
+          const json = await urlResp.json();
+          const resolvedUrl = json?.value || json?.result;
+          if (typeof resolvedUrl === "string" && resolvedUrl) {
+            targetUrl = resolvedUrl;
+          }
+        }
+      }
+
+      const response = await fetch(targetUrl);
       if (!response.ok) {
         // If direct fetch fails, try generating a signed URL
         const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
@@ -292,7 +301,7 @@ export async function registerRoutes(httpServer: Server | null, app: Express): P
   app.post("/api/arsip-surat", async (req: Request, res: Response) => {
     try {
       const { convexMutation } = await import("./convexClient");
-      const { nomor, perihal, pengirimTujuan, tanggal, jenis, pdfUrl, tanggalSurat } = req.body;
+      const { nomor, perihal, pengirimTujuan, tanggal, jenis, pdfUrl, tanggalSurat, customFields } = req.body;
       const status = jenis === "Keluar" ? "Terkirim" : "Terarsip";
       const args: Record<string, unknown> = { nomor, perihal, pengirimTujuan, tanggal, jenis, status };
       if (pdfUrl && typeof pdfUrl === "string" && pdfUrl.trim()) {
@@ -300,6 +309,14 @@ export async function registerRoutes(httpServer: Server | null, app: Express): P
       }
       if (tanggalSurat && typeof tanggalSurat === "string" && tanggalSurat.trim()) {
         args.tanggalSurat = tanggalSurat.trim();
+      }
+      if (customFields && typeof customFields === "object" && !Array.isArray(customFields)) {
+        const cleaned: Record<string, string> = {};
+        for (const [k, val] of Object.entries(customFields)) {
+          if (typeof val === "string" && val.trim()) cleaned[k] = val.trim();
+          else if (typeof val === "number") cleaned[k] = String(val);
+        }
+        if (Object.keys(cleaned).length > 0) args.customFields = cleaned;
       }
       const data = await convexMutation("arsipSurat:create", args);
       res.status(201).json(data);
@@ -329,6 +346,87 @@ export async function registerRoutes(httpServer: Server | null, app: Express): P
       res.status(204).end();
     } catch (e: any) {
       res.status(500).json({ message: e?.message || "Failed to delete" });
+    }
+  });
+
+  app.put("/api/arsip-surat/:id", async (req: Request, res: Response) => {
+    try {
+      const { convexMutation } = await import("./convexClient");
+      const { nomor, perihal, pengirimTujuan, tanggal, jenis, pdfUrl, tanggalSurat, customFields, status } = req.body;
+      const args: Record<string, unknown> = { id: req.params.id as string };
+      if (nomor !== undefined) args.nomor = nomor;
+      if (perihal !== undefined) args.perihal = perihal;
+      if (pengirimTujuan !== undefined) args.pengirimTujuan = pengirimTujuan;
+      if (tanggal !== undefined) args.tanggal = tanggal;
+      if (jenis !== undefined) {
+        args.jenis = jenis;
+        args.status = status || (jenis === "Keluar" ? "Terkirim" : "Terarsip");
+      }
+      if (status !== undefined) args.status = status;
+      if (pdfUrl !== undefined) args.pdfUrl = pdfUrl || undefined;
+      if (tanggalSurat !== undefined) args.tanggalSurat = tanggalSurat || undefined;
+      if (customFields && typeof customFields === "object" && !Array.isArray(customFields)) {
+        const cleaned: Record<string, string> = {};
+        for (const [k, val] of Object.entries(customFields)) {
+          if (typeof val === "string" && val.trim()) cleaned[k] = val.trim();
+          else if (typeof val === "number") cleaned[k] = String(val);
+        }
+        args.customFields = cleaned;
+      }
+      await convexMutation("arsipSurat:update", args);
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("Convex update error:", e);
+      res.status(500).json({ message: e?.message || "Failed to update" });
+    }
+  });
+
+  // ── Arsip Surat — Custom Columns ─────────────────────────────────────────
+  app.get("/api/arsip-surat/custom-columns", async (_req: Request, res: Response) => {
+    try {
+      const { convexQuery } = await import("./convexClient");
+      const data = await convexQuery("arsipCustomColumns:list");
+      res.json(data);
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to fetch" });
+    }
+  });
+
+  app.post("/api/arsip-surat/custom-columns", async (req: Request, res: Response) => {
+    try {
+      const { convexMutation } = await import("./convexClient");
+      const { label, type } = req.body || {};
+      if (!label || typeof label !== "string" || !label.trim()) {
+        return res.status(400).json({ message: "Label kolom wajib diisi" });
+      }
+      const args: Record<string, unknown> = { label: label.trim() };
+      if (type === "text" || type === "number" || type === "date") args.type = type;
+      const id = await convexMutation("arsipCustomColumns:create", args);
+      res.status(201).json({ id });
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to create" });
+    }
+  });
+
+  app.delete("/api/arsip-surat/custom-columns/:id", async (req: Request, res: Response) => {
+    try {
+      const { convexMutation } = await import("./convexClient");
+      await convexMutation("arsipCustomColumns:remove", { id: req.params.id as string });
+      res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to delete" });
+    }
+  });
+
+  app.patch("/api/arsip-surat/custom-columns/reorder", async (req: Request, res: Response) => {
+    try {
+      const { convexMutation } = await import("./convexClient");
+      const { ids } = req.body || {};
+      if (!Array.isArray(ids)) return res.status(400).json({ message: "ids harus array" });
+      await convexMutation("arsipCustomColumns:reorder", { ids });
+      res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to reorder" });
     }
   });
 
@@ -484,6 +582,21 @@ export async function registerRoutes(httpServer: Server | null, app: Express): P
       res.status(204).end();
     } catch (e: any) {
       res.status(500).json({ message: e?.message || "Failed to delete" });
+    }
+  });
+
+  app.post("/api/chatbot", async (req: Request, res: Response) => {
+    try {
+      const { message } = req.body as { message?: string };
+      if (!message || typeof message !== "string" || !message.trim()) {
+        return res.status(400).json({ message: "Pesan kosong" });
+      }
+      const { generatePutikChatReply } = await import("./nvidiaChatbot");
+      const reply = await generatePutikChatReply(message.trim());
+      res.json(reply);
+    } catch (e: any) {
+      console.error("[chatbot] error:", e?.message);
+      res.status(500).json({ message: e?.message || "Chatbot gagal merespons" });
     }
   });
 

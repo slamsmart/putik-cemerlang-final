@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { isAuthenticated } from "@/lib/auth";
+import { useVisitorTracker } from "@/hooks/useVisitorTracker";
 
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/LoginPage";
@@ -24,8 +25,11 @@ import StatistikPengunjungPage from "@/pages/StatistikPengunjungPage";
 import PelaporanGratifikasiPage from "@/pages/PelaporanGratifikasiPage";
 import GratifikasiAdminPage from "@/pages/GratifikasiAdminPage";
 import KontakPage from "@/pages/KontakPage";
+import ProfilePage from "@/pages/ProfilePage";
+import VotingEOMPage from "@/pages/VotingEOMPage";
+import VotingEOMAdminPage from "@/pages/VotingEOMAdminPage";
 
-const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || "https://mellow-gerbil-927.convex.cloud";
+const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || "https://fabulous-lemur-912.convex.cloud";
 const convex = new ConvexReactClient(CONVEX_URL);
 
 function ProtectedRoute({ component: Component }: { component: () => JSX.Element }) {
@@ -38,6 +42,7 @@ function ProtectedRoute({ component: Component }: { component: () => JSX.Element
 }
 
 function Router() {
+  useVisitorTracker();
   return (
     <Switch>
       <Route path="/" component={LandingPage} />
@@ -56,6 +61,9 @@ function Router() {
       <Route path="/whistle-blowing" component={WhistleBlowingPage} />
       <Route path="/pelaporan-gratifikasi" component={PelaporanGratifikasiPage} />
       <Route path="/kontak" component={KontakPage} />
+      <Route path="/profile" component={ProfilePage} />
+      <Route path="/voting-eom" component={VotingEOMPage} />
+      <Route path="/admin/voting-eom" component={() => <ProtectedRoute component={VotingEOMAdminPage} />} />
       <Route path="/admin/pelaporan-gratifikasi" component={() => <ProtectedRoute component={GratifikasiAdminPage} />} />
       <Route component={NotFound} />
     </Switch>

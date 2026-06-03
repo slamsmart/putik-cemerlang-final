@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
-import { Link } from "wouter";
 import { motion } from "framer-motion";
+import PublicNavbar from "@/components/PublicNavbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send } from "lucide-react";
+import { Send } from "lucide-react";
 
 const kategoriList = ["Pelanggaran Disiplin","Korupsi","Fraud","Benturan Kepentingan","Pungutan Liar","Penyalahgunaan Wewenang","Lainnya"];
 
@@ -87,15 +87,8 @@ export default function WhistleBlowingPage() {
 
   return (
     <div className="min-h-screen bg-[#f7f9fb] font-['Inter',Helvetica]">
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2 text-sm font-medium text-[#001e40] hover:underline">
-            <ArrowLeft className="h-4 w-4" /> Kembali
-          </Link>
-          <span className="text-sm font-bold text-[#001e40]">PUTIK CEMERLANG</span>
-        </div>
-      </header>
-      <main className="mx-auto max-w-3xl px-6 py-12">
+      <PublicNavbar />
+      <main className="mx-auto max-w-3xl px-6 pt-32 pb-12">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold text-[#001e40]">Whistle Blowing System</h1>

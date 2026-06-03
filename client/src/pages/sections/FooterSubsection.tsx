@@ -19,12 +19,8 @@ export const FooterSubsection = (): JSX.Element => {
                 PUTIK CEMERLANG
               </h2>
             </header>
-            <p className="w-[298.11px] [font-family:'Inter',Helvetica] text-sm font-normal leading-[22.8px] tracking-[0] text-slate-300">
-              Sistem Informasi Maritim Terpadu Kabupaten
-              <br />
-              Malang. Mewujudkan tata kelola laut yang
-              <br />
-              transparan dan berkelanjutan.
+            <p className="w-[298.11px] [font-family:'Inter',Helvetica] text-sm font-normal leading-[22.8px] tracking-[0] text-slate-300 text-justify">
+              Pusat Informasi Kelautan Cabang Dinas Kelautan dan Perikanan Malang yang menyediakan data dan informasi kelautan untuk mendukung pelayanan publik, memudahkan akses informasi bagi masyarakat dan pemangku kepentingan secara cepat, akurat, dan informatif.
             </p>
           </section>
           <nav aria-label="Footer navigation" className="w-fit">

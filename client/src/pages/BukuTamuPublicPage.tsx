@@ -1,13 +1,7 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import PublicNavbar from "@/components/PublicNavbar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  ChevronDown,
   Building,
   ShieldCheck,
   Info,
@@ -20,19 +14,22 @@ import {
   Send,
 } from "lucide-react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation as useConvexMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useToast } from "@/hooks/use-toast";
 
 export default function BukuTamuPublicPage() {
-  const [, setLocation] = useLocation();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreeAntiGratifikasi, setAgreeAntiGratifikasi] = useState(false);
   const { toast } = useToast();
   const createGuestbook = useConvexMutation(api.guestbook.create);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   const [formData, setFormData] = useState({
     nama: "",
@@ -147,38 +144,7 @@ export default function BukuTamuPublicPage() {
 
   return (
     <div className="bg-[#f7f9fb] text-[#191c1e] font-['Inter',Helvetica] overflow-x-hidden min-h-screen">
-      {/* Top Navigation Bar */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight shadow-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 w-full">
-        <div className="flex justify-between items-center max-w-7xl mx-auto px-6 h-20">
-          <div className="text-xl font-bold tracking-tight text-[#001e40] dark:text-white uppercase">
-            Putik Cemerlang
-          </div>
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/"><a className="text-sm text-slate-600 dark:text-slate-400 hover:text-[#001e40] dark:hover:text-white transition-colors">Beranda</a></Link>
-            <Link href="/buku-tamu"><a className="text-sm text-[#003366] dark:text-blue-400 border-b-2 border-[#003366] pb-1 transition-colors">Buku Tamu</a></Link>
-            <Link href="/#layanan"><a className="text-sm text-slate-600 dark:text-slate-400 hover:text-[#001e40] dark:hover:text-white transition-colors">Layanan</a></Link>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-[#001e40] dark:hover:text-white transition-colors focus:outline-none">
-                Pengaduan <ChevronDown className="h-3 w-3" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="min-w-[220px]">
-                <DropdownMenuItem className="cursor-pointer" onSelect={() => setLocation("/pengaduan-masyarakat")}>
-                  Pengaduan Masyarakat
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer" onSelect={() => setLocation("/whistle-blowing")}>
-                  Whistle Blowing System
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Link href="/#kontak"><a className="text-sm text-slate-600 dark:text-slate-400 hover:text-[#001e40] dark:hover:text-white transition-colors">Kontak</a></Link>
-          </nav>
-          <Link href="/admin">
-            <Button className="bg-[#001e40] text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#003366] transition-all active:opacity-80">
-              Akses Admin
-            </Button>
-          </Link>
-        </div>
-      </header>
+      <PublicNavbar />
 
       <main className="pt-20 pb-24" style={{
         backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23003366' fill-opacity='0.05' d='M0,192L48,197.3C96,203,192,213,288,192C384,171,480,117,576,112C672,107,768,149,864,154.7C960,160,1056,128,1152,112C1248,96,1344,96,1392,96L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E\")",
@@ -397,8 +363,8 @@ export default function BukuTamuPublicPage() {
           <div className="flex flex-col gap-8 md:flex-row md:justify-between">
             <div className="max-w-xs">
               <h3 className="mb-3 text-lg font-bold uppercase">PUTIK CEMERLANG</h3>
-              <p className="text-sm leading-relaxed text-slate-400">
-                Sistem Informasi Maritim Terpadu Kabupaten Malang. Mewujudkan tata kelola laut yang transparan dan berkelanjutan.
+              <p className="text-sm leading-relaxed text-slate-400 text-justify">
+                Pusat Informasi Kelautan Cabang Dinas Kelautan dan Perikanan Malang yang menyediakan data dan informasi kelautan untuk mendukung pelayanan publik, memudahkan akses informasi bagi masyarakat dan pemangku kepentingan secara cepat, akurat, dan informatif.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-x-16 gap-y-3 text-sm text-slate-400">

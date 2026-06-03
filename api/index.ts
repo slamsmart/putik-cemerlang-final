@@ -1,3 +1,7 @@
+import dotenv from "dotenv";
+import path from "path";
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+
 import express, { type Request, Response, NextFunction } from "express";
 import multer from "multer";
 import path from "path";
@@ -192,6 +196,7 @@ app.get("/api/pdf-proxy", async (req: Request, res: Response) => {
   if (!url) return res.status(400).json({ message: "Missing url parameter" });
 
   const isCloudinaryUrl = url.includes("cloudinary.com");
+  const convexStorageMatch = url.match(/^(https:\/\/[^/]+\.convex\.cloud)\/api\/storage\/([^/?#]+)/i);
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("X-Content-Type-Options", "nosniff");
 
@@ -226,6 +231,23 @@ app.get("/api/pdf-proxy", async (req: Request, res: Response) => {
   };
 
   try {
+    if (convexStorageMatch) {
+      const [, convexOrigin, storageId] = convexStorageMatch;
+      const urlResp = await fetch(`${convexOrigin}/api/query`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          path: "arsipSurat:getFileUrl",
+          args: { storageId },
+        }),
+      });
+      if (urlResp.ok) {
+        const json = await urlResp.json();
+        const resolvedUrl = json?.value || json?.result;
+        if (typeof resolvedUrl === "string" && resolvedUrl && await tryFetchAndSend(resolvedUrl)) return;
+      }
+    }
+
     // 1️⃣ Direct fetch (works if file is truly public)
     if (await tryFetchAndSend(url)) return;
     console.warn(`PDF proxy: direct fetch failed for ${url}`);
@@ -303,7 +325,7 @@ app.get("/api/arsip-surat", async (_req: Request, res: Response) => {
 
 app.post("/api/arsip-surat", async (req: Request, res: Response) => {
   try {
-    const { nomor, perihal, pengirimTujuan, tanggal, jenis, pdfUrl, tanggalSurat } = req.body;
+    const { nomor, perihal, pengirimTujuan, tanggal, jenis, pdfUrl, tanggalSurat, customFields } = req.body;
     const status = jenis === "Keluar" ? "Terkirim" : "Terarsip";
     const args: Record<string, unknown> = { nomor, perihal, pengirimTujuan, tanggal, jenis, status };
     if (pdfUrl && typeof pdfUrl === "string" && pdfUrl.trim()) {
@@ -311,6 +333,14 @@ app.post("/api/arsip-surat", async (req: Request, res: Response) => {
     }
     if (tanggalSurat && typeof tanggalSurat === "string" && tanggalSurat.trim()) {
       args.tanggalSurat = tanggalSurat.trim();
+    }
+    if (customFields && typeof customFields === "object" && !Array.isArray(customFields)) {
+      const cleaned: Record<string, string> = {};
+      for (const [k, val] of Object.entries(customFields)) {
+        if (typeof val === "string" && val.trim()) cleaned[k] = val.trim();
+        else if (typeof val === "number") cleaned[k] = String(val);
+      }
+      if (Object.keys(cleaned).length > 0) args.customFields = cleaned;
     }
     const data = await convexMutation("arsipSurat:create", args);
     res.status(201).json(data);
@@ -337,6 +367,82 @@ app.delete("/api/arsip-surat/:id", async (req: Request, res: Response) => {
     res.status(204).end();
   } catch (e: any) {
     res.status(500).json({ message: e?.message || "Failed to delete" });
+  }
+});
+
+app.put("/api/arsip-surat/:id", async (req: Request, res: Response) => {
+  try {
+    const { nomor, perihal, pengirimTujuan, tanggal, jenis, pdfUrl, tanggalSurat, customFields, status } = req.body;
+    const args: Record<string, unknown> = { id: req.params.id };
+    if (nomor !== undefined) args.nomor = nomor;
+    if (perihal !== undefined) args.perihal = perihal;
+    if (pengirimTujuan !== undefined) args.pengirimTujuan = pengirimTujuan;
+    if (tanggal !== undefined) args.tanggal = tanggal;
+    if (jenis !== undefined) {
+      args.jenis = jenis;
+      args.status = status || (jenis === "Keluar" ? "Terkirim" : "Terarsip");
+    }
+    if (status !== undefined) args.status = status;
+    if (pdfUrl !== undefined) args.pdfUrl = pdfUrl || undefined;
+    if (tanggalSurat !== undefined) args.tanggalSurat = tanggalSurat || undefined;
+    if (customFields && typeof customFields === "object" && !Array.isArray(customFields)) {
+      const cleaned: Record<string, string> = {};
+      for (const [k, val] of Object.entries(customFields)) {
+        if (typeof val === "string" && val.trim()) cleaned[k] = val.trim();
+        else if (typeof val === "number") cleaned[k] = String(val);
+      }
+      args.customFields = cleaned;
+    }
+    await convexMutation("arsipSurat:update", args);
+    res.json({ ok: true });
+  } catch (e: any) {
+    console.error("Convex update error:", e);
+    res.status(500).json({ message: e?.message || "Failed to update" });
+  }
+});
+
+// ── Arsip Surat — Custom Columns ─────────────────────────────────────────────
+app.get("/api/arsip-surat/custom-columns", async (_req: Request, res: Response) => {
+  try {
+    const data = await convexQuery("arsipCustomColumns:list");
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to fetch" });
+  }
+});
+
+app.post("/api/arsip-surat/custom-columns", async (req: Request, res: Response) => {
+  try {
+    const { label, type } = req.body || {};
+    if (!label || typeof label !== "string" || !label.trim()) {
+      return res.status(400).json({ message: "Label kolom wajib diisi" });
+    }
+    const args: Record<string, unknown> = { label: label.trim() };
+    if (type === "text" || type === "number" || type === "date") args.type = type;
+    const id = await convexMutation("arsipCustomColumns:create", args);
+    res.status(201).json({ id });
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to create" });
+  }
+});
+
+app.delete("/api/arsip-surat/custom-columns/:id", async (req: Request, res: Response) => {
+  try {
+    await convexMutation("arsipCustomColumns:remove", { id: req.params.id });
+    res.status(204).end();
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to delete" });
+  }
+});
+
+app.patch("/api/arsip-surat/custom-columns/reorder", async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids)) return res.status(400).json({ message: "ids harus array" });
+    await convexMutation("arsipCustomColumns:reorder", { ids });
+    res.status(204).end();
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to reorder" });
   }
 });
 
@@ -499,6 +605,109 @@ app.delete("/api/pelaporan-gratifikasi/:id", async (req: Request, res: Response)
     res.status(204).end();
   } catch (e: any) {
     res.status(500).json({ message: e?.message || "Failed to delete" });
+  }
+});
+
+// ── NVIDIA Chatbot ────────────────────────────────────────────────────────────
+app.post("/api/chatbot", async (req: Request, res: Response) => {
+  try {
+    const { message } = req.body as { message?: string };
+    if (!message || typeof message !== "string" || !message.trim()) {
+      return res.status(400).json({ message: "Pesan kosong" });
+    }
+
+    const { generatePutikChatReply } = await import("../server/nvidiaChatbot");
+    const reply = await generatePutikChatReply(message.trim());
+    res.json(reply);
+  } catch (e: any) {
+    console.error("[chatbot] error:", e?.message);
+    res.status(500).json({ message: e?.message || "Chatbot gagal merespons" });
+  }
+});
+
+// ── SPA Catch-all for Meta Tags ───────────────────────────────────────────────
+function getOpenGraphTags(rawPath: string, host: string = "") {
+  const pathStr = rawPath.split('?')[0];
+  const baseUrl = host.includes("localhost") ? `http://${host}` : `https://${host}`;
+  let title = "Putik Cemerlang";
+  let description = "Portal Layanan Resmi Putik Cemerlang";
+  let image = `${baseUrl}/logo.png`;
+
+  const t = Date.now();
+  if (pathStr === "/" || pathStr === "/index.html") {
+    title = "Beranda | Putik Cemerlang";
+    description = "Selamat datang di portal layanan resmi Putik Cemerlang.";
+    image = `${baseUrl}/logo.png?v=${t}`;
+  } else if (pathStr.includes("/buku-tamu")) {
+    title = "Buku Tamu | Putik Cemerlang";
+    description = "Silakan isi form buku tamu untuk mencatat kunjungan Anda.";
+    image = `https://placehold.co/1200x630/0ea5e9/ffffff?text=Buku+Tamu&v=${t}`;
+  } else if (pathStr.includes("/pengaduan-masyarakat")) {
+    title = "Pengaduan Masyarakat | Putik Cemerlang";
+    description = "Layanan pengaduan masyarakat. Sampaikan laporan Anda dengan aman.";
+    image = `https://placehold.co/1200x630/eab308/ffffff?text=Pengaduan+Masyarakat&v=${t}`;
+  } else if (pathStr.includes("/whistle-blowing")) {
+    title = "Whistle Blowing System | Putik Cemerlang";
+    description = "Layanan pelaporan pelanggaran yang aman dan rahasia.";
+    image = `https://placehold.co/1200x630/ef4444/ffffff?text=Whistle+Blowing&v=${t}`;
+  } else if (pathStr.includes("/pelaporan-gratifikasi")) {
+    title = "Pelaporan Gratifikasi | Putik Cemerlang";
+    description = "Layanan pelaporan penerimaan atau penolakan gratifikasi.";
+    image = `https://placehold.co/1200x630/10b981/ffffff?text=Pelaporan+Gratifikasi&v=${t}`;
+  } else if (pathStr.includes("/kontak")) {
+    title = "Kontak Kami | Putik Cemerlang";
+    description = "Informasi kontak, lokasi, dan jam layanan kami.";
+    image = `https://placehold.co/1200x630/8b5cf6/ffffff?text=Kontak+Kami&v=${t}`;
+  } else if (pathStr.includes("/profile")) {
+    title = "Profil Instansi | Putik Cemerlang";
+    description = "Visi, misi, dan struktur organisasi kami.";
+    image = `https://placehold.co/1200x630/3b82f6/ffffff?text=Profil+Instansi&v=${t}`;
+  } else if (pathStr.includes("/voting-eom")) {
+    title = "Voting Employee of the Month | Putik Cemerlang";
+    description = "Berikan suara Anda untuk kandidat Employee of the Month.";
+    image = `https://placehold.co/1200x630/f59e0b/ffffff?text=Voting+EOM&v=${t}`;
+  } else if (pathStr.includes("/admin/login")) {
+    title = "Login | Putik Cemerlang";
+    description = "Silakan login untuk mengakses halaman admin.";
+    image = `${baseUrl}/logo.png?v=${t}`;
+  } else if (pathStr.includes("/admin")) {
+    title = "Admin Dashboard | Putik Cemerlang";
+    description = "Halaman khusus administrator.";
+    image = `${baseUrl}/logo.png?v=${t}`;
+  }
+
+  return `
+    <title>${title}</title>
+    <meta name="description" content="${description}">
+    <meta property="og:title" content="${title}">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="${image}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content="${baseUrl}${pathStr}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${title}">
+    <meta name="twitter:description" content="${description}">
+    <meta name="twitter:image" content="${image}">
+  `;
+}
+
+app.get("/{*path}", (req: Request, res: Response, next: NextFunction) => {
+  if (req.path.startsWith("/api")) return next();
+  
+  try {
+    const htmlPath = path.resolve(process.cwd(), "dist/public/index.html");
+    if (!fs.existsSync(htmlPath)) {
+      return res.status(404).send("index.html not found. Make sure to build the project.");
+    }
+    let template = fs.readFileSync(htmlPath, "utf-8");
+    const host = req.get("host") || "";
+    const metaTags = getOpenGraphTags(req.originalUrl, host);
+    template = template.replace("</head>", `${metaTags}\n  </head>`);
+    res.status(200).set({ "Content-Type": "text/html" }).send(template);
+  } catch (e) {
+    next(e);
   }
 });
 

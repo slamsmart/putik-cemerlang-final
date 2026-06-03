@@ -36,6 +36,11 @@ const primaryNavItems = [
     href: "/admin/pelaporan-gratifikasi",
   },
   {
+    label: "Voting EOM",
+    icon: "/figmaAssets/container-2.svg",
+    href: "/admin/voting-eom",
+  },
+  {
     label: "Konten & Slider",
     icon: "/figmaAssets/container-2.svg",
     href: "/admin/konten-slider",
@@ -94,7 +99,7 @@ function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       <aside className={`fixed left-0 top-0 flex h-screen w-64 flex-col justify-between border-r border-slate-200 bg-slate-50 p-4 z-40 transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
         <div className="flex flex-col h-full overflow-y-auto">
           <header className="flex w-full flex-col px-4 pb-8 pt-4 relative">
-            <Link href="/admin">
+            <Link href="/">
               <div className="flex items-center gap-2 cursor-pointer mb-2">
                 <img 
                   src="/logo.png?v=2" 
@@ -187,16 +192,15 @@ function AdminFooter() {
           <h2 className="[font-family:'Inter',Helvetica] text-lg font-bold leading-7 text-white">
             PUTIK CEMERLANG
           </h2>
-          <p className="[font-family:'Inter',Helvetica] text-sm font-normal leading-[22px] text-slate-300">
-            Sistem Informasi Maritim Terpadu Kabupaten Malang.
-            Mewujudkan tata kelola laut yang transparan dan berkelanjutan.
+          <p className="[font-family:'Inter',Helvetica] text-sm font-normal leading-[22px] text-slate-300 text-justify">
+            Pusat Informasi Kelautan Cabang Dinas Kelautan dan Perikanan Malang yang menyediakan data dan informasi kelautan untuk mendukung pelayanan publik, memudahkan akses informasi bagi masyarakat dan pemangku kepentingan secara cepat, akurat, dan informatif.
           </p>
         </section>
         <nav aria-label="Footer navigation" className="w-full md:w-fit">
           <ul className="grid grid-cols-2 gap-x-6 gap-y-3 md:gap-x-12">
             {footerLinks.map((link) => (
               <li key={link}>
-                <button className="[font-family:'Inter',Helvetica] text-sm font-normal text-slate-300 hover:text-white transition-colors text-left">
+                <button className="[font-family:'Inter',Helvetica] text-sm font-normal text-slate-300 hover:text-white transition-all duration-300 hover:[text-shadow:0_0_8px_rgba(0,166,228,0.6),0_0_16px_rgba(0,166,228,0.3)] text-left">
                   {link}
                 </button>
               </li>
@@ -224,17 +228,19 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     <div className="flex min-h-screen bg-[#f7f9fb] relative w-full overflow-x-hidden">
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 w-full h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-20 shadow-sm">
-        <div className="flex items-center gap-2">
-          <img 
-            src="/logo.png?v=2" 
-            alt="" 
-            className="h-8 w-auto" 
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-          />
-          <h1 className="[font-family:'Inter',Helvetica] text-lg font-bold text-blue-900 truncate">
-            PUTIK CEMERLANG
-          </h1>
-        </div>
+        <Link href="/">
+          <div className="flex items-center gap-2 cursor-pointer">
+            <img 
+              src="/logo.png?v=2" 
+              alt="" 
+              className="h-8 w-auto" 
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+            <h1 className="[font-family:'Inter',Helvetica] text-lg font-bold text-blue-900 truncate">
+              PUTIK CEMERLANG
+            </h1>
+          </div>
+        </Link>
         <button 
           onClick={() => setIsSidebarOpen(true)} 
           className="p-2 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"

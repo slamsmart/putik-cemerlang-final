@@ -1,34 +1,11 @@
 import { motion } from "framer-motion";
 import { Link } from "wouter";
+import PublicNavbar from "@/components/PublicNavbar";
 import {
-  ArrowLeft, MapPin, Phone, Mail, Clock, Globe,
-  Navigation, ExternalLink, Building2, Users,
+  MapPin, Clock, Globe,
+  Navigation, ExternalLink, Building2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-
-const contactPersons = [
-  {
-    nama: "Kepala Cabang Dinas",
-    jabatan: "Kepala Cabang Dinas Kelautan dan Perikanan Kab. Malang",
-    telepon: "(0341) 881-0XX",
-    email: "cabdin.kp.malang@jatimprov.go.id",
-    jam: "Senin–Jumat, 07.30–16.00 WIB",
-  },
-  {
-    nama: "Bagian Pelayanan Publik",
-    jabatan: "Staff Pelayanan & Informasi",
-    telepon: "(0341) 881-0XX",
-    email: "pelayanan.cabdin.kp@jatimprov.go.id",
-    jam: "Senin–Jumat, 08.00–15.00 WIB",
-  },
-  {
-    nama: "Pengaduan & Aspirasi",
-    jabatan: "Unit Pengelola Pengaduan Masyarakat",
-    telepon: "(0341) 881-0XX",
-    email: "pengaduan.cabdin.kp@jatimprov.go.id",
-    jam: "Senin–Jumat, 08.00–14.00 WIB",
-  },
-];
 
 const quickFacts = [
   { icon: <Building2 className="h-5 w-5" />, label: "Instansi", value: "Cabang Dinas Kelautan dan Perikanan Kab. Malang" },
@@ -40,18 +17,7 @@ const quickFacts = [
 export default function KontakPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f0f4fa] to-[#f7f9fb] font-['Inter',Helvetica]">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur shadow-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2 text-sm font-medium text-[#001e40] hover:underline">
-            <ArrowLeft className="h-4 w-4" /> Kembali ke Beranda
-          </Link>
-          <div className="flex items-center gap-2">
-            <img src="/logo.png?v=2" alt="" className="h-8 w-auto" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-            <span className="text-sm font-bold text-[#001e40]">PUTIK CEMERLANG</span>
-          </div>
-        </div>
-      </header>
+      <PublicNavbar />
 
       {/* Hero */}
       <div className="bg-gradient-to-br from-[#001e40] via-[#003366] to-[#00539b] py-16 text-white">
@@ -121,52 +87,6 @@ export default function KontakPage() {
               />
             </div>
           </Card>
-        </motion.div>
-
-        {/* Contact Persons */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-              <Users className="h-5 w-5 text-[#003366]" />
-              <h2 className="text-lg font-bold text-[#001e40]">Contact Person</h2>
-            </div>
-            <p className="text-sm text-[#5f5e5e]">Hubungi personel kami untuk informasi lebih lanjut.</p>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {contactPersons.map((cp, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 + 0.1 * i }}>
-                <Card className="h-full rounded-xl border border-[#c3c6d1] bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="mb-4 h-12 w-12 rounded-full bg-gradient-to-br from-[#003366] to-[#00539b] flex items-center justify-center text-white font-bold text-lg">
-                      {cp.nama.charAt(0)}
-                    </div>
-                    <h3 className="font-bold text-[#001e40] text-sm mb-1">{cp.nama}</h3>
-                    <p className="text-xs text-[#5f5e5e] mb-4 leading-relaxed">{cp.jabatan}</p>
-                    <div className="space-y-2">
-                      <a
-                        href={`tel:${cp.telepon.replace(/[^0-9+]/g, "")}`}
-                        className="flex items-center gap-2 text-xs text-[#191c1e] hover:text-[#003366] transition-colors"
-                      >
-                        <Phone className="h-3.5 w-3.5 text-[#003366] shrink-0" />
-                        {cp.telepon}
-                      </a>
-                      <a
-                        href={`mailto:${cp.email}`}
-                        className="flex items-center gap-2 text-xs text-[#191c1e] hover:text-[#003366] transition-colors break-all"
-                      >
-                        <Mail className="h-3.5 w-3.5 text-[#003366] shrink-0" />
-                        {cp.email}
-                      </a>
-                      <div className="flex items-center gap-2 text-xs text-[#5f5e5e]">
-                        <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        {cp.jam}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
         </motion.div>
 
         {/* Social & CTA */}

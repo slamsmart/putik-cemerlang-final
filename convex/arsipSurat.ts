@@ -4,11 +4,31 @@ import { query, mutation } from "./_generated/server";
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db
+    const records = await ctx.db
       .query("arsipSurat")
       .withIndex("by_created")
       .order("desc")
       .collect();
+
+    return await Promise.all(
+      records.map(async (record) => {
+        const storageIdFromDirectPath = record.pdfUrl?.match(/\/api\/storage\/([^/?#]+)/)?.[1];
+        const storageId = storageIdFromDirectPath || (
+          record.pdfUrl && !record.pdfUrl.includes("/") && !record.pdfUrl.startsWith("http")
+            ? record.pdfUrl
+            : undefined
+        );
+        if (storageId) {
+          try {
+            const url = await ctx.storage.getUrl(storageId as any);
+            if (url) record.pdfUrl = url;
+          } catch (e) {
+            console.error("Failed to get url for", storageId, e);
+          }
+        }
+        return record;
+      })
+    );
   },
 });
 
@@ -22,6 +42,7 @@ export const create = mutation({
     status: v.union(v.literal("Terarsip"), v.literal("Terbaca"), v.literal("Terkirim"), v.literal("Belum Dibaca")),
     pdfUrl: v.optional(v.string()),
     tanggalSurat: v.optional(v.string()),
+    customFields: v.optional(v.record(v.string(), v.string())),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("arsipSurat", {
@@ -42,6 +63,7 @@ export const update = mutation({
     status: v.optional(v.union(v.literal("Terarsip"), v.literal("Terbaca"), v.literal("Terkirim"), v.literal("Belum Dibaca"))),
     pdfUrl: v.optional(v.string()),
     tanggalSurat: v.optional(v.string()),
+    customFields: v.optional(v.record(v.string(), v.string())),
   },
   handler: async (ctx, { id, ...patch }) => {
     await ctx.db.patch(id, patch);

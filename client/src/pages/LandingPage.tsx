@@ -4,15 +4,11 @@ import { useQuery as useConvexQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { motion } from "framer-motion";
 import { HeroSlider } from "@/components/HeroSlider";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import PublicNavbar from "@/components/PublicNavbar";
+import { LiveChatWidget } from "@/components/LiveChatWidget";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as LucideIcons from "lucide-react";
-import { ChevronDown, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer 
 } from "recharts";
@@ -74,57 +70,14 @@ export default function LandingPage() {
   return (
     <div className="bg-[#f7f9fb] text-[#191c1e] font-['Inter',Helvetica] min-h-screen">
       {/* ── Navigation ───────────────────────────────────── */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm fixed top-0 w-full z-50">
-        <nav className="flex justify-between items-center max-w-[1280px] mx-auto px-6 h-20">
-          <div className="flex items-center gap-3">
-            <img 
-              src="/logo.png?v=2" 
-              alt="" 
-              className="h-10 w-auto"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-            />
-            <div className="text-xl font-bold tracking-tight text-[#003366] dark:text-white uppercase">
-              Putik Cemerlang
-            </div>
-          </div>
-          <div className="hidden md:flex items-center space-x-8">
-            <Link href="/"><a className="font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight text-blue-700 dark:text-blue-400 border-b-2 border-blue-700 pb-1">Beranda</a></Link>
-            <Link href="/buku-tamu"><a className="font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight text-slate-600 dark:text-slate-400 hover:text-blue-900 dark:hover:text-white transition-colors">Buku Tamu</a></Link>
-            <a href="#layanan" className="font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight text-slate-600 dark:text-slate-400 hover:text-blue-900 dark:hover:text-white transition-colors">Layanan</a>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight text-slate-600 transition-colors hover:text-blue-900 focus:outline-none">
-                Pengaduan <ChevronDown className="h-3 w-3" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" sideOffset={8} className="min-w-[240px] rounded-xl border border-slate-200 bg-white shadow-lg p-1">
-                <DropdownMenuItem className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900" onSelect={() => setLocation("/pengaduan-masyarakat")}>
-                  Pengaduan Masyarakat
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900" onSelect={() => setLocation("/whistle-blowing")}>
-                  Whistle Blowing System
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900" onSelect={() => setLocation("/pelaporan-gratifikasi")}>
-                  Pelaporan Gratifikasi
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Link href="/kontak"><a className="font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight text-slate-600 dark:text-slate-400 hover:text-blue-900 dark:hover:text-white transition-colors">Kontak</a></Link>
-            <Link href="/admin">
-              <button className="bg-[#003366] text-white font-['Public_Sans',Helvetica] font-semibold px-6 py-3 rounded-lg hover:opacity-90 active:opacity-80 transition-all">
-                Akses Admin
-              </button>
-            </Link>
-          </div>
-          <div className="md:hidden">
-            <LucideIcons.Menu className="text-blue-900" />
-          </div>
-        </nav>
-      </header>
+      <PublicNavbar />
 
       <main>
         {/* ── Hero Slider (Retained Function) ───────────────────────────────────── */}
         <div className="pt-20">
           <HeroSlider />
         </div>
+
 
         {/* ── Capaian & Jangkauan Layanan (Dynamic Convex Stats) ──────────────────── */}
         <section className="py-20 bg-white">
@@ -271,8 +224,8 @@ export default function LandingPage() {
         <div className="w-full py-12 px-6 flex flex-col md:flex-row justify-between items-start max-w-[1280px] mx-auto gap-8 relative z-10">
           <div className="max-w-md">
             <div className="text-white font-bold text-lg mb-4">Putik Cemerlang</div>
-            <p className="font-['Public_Sans',Helvetica] text-sm leading-relaxed text-slate-300 mb-6">
-              Pusat Informasi Kelautan Terpadu Kabupaten Malang - Mendukung kemandirian maritim melalui transparansi data dan inovasi layanan publik berbasis teknologi informasi.
+            <p className="font-['Public_Sans',Helvetica] text-sm leading-relaxed text-slate-300 mb-6 text-justify">
+              Pusat Informasi Kelautan Cabang Dinas Kelautan dan Perikanan Malang yang menyediakan data dan informasi kelautan untuk mendukung pelayanan publik, memudahkan akses informasi bagi masyarakat dan pemangku kepentingan secara cepat, akurat, dan informatif.
             </p>
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 cursor-pointer transition-all">
@@ -292,7 +245,7 @@ export default function LandingPage() {
               <ul className="space-y-2">
                 <li><a className="font-['Public_Sans',Helvetica] text-sm text-slate-300 hover:text-white transition-all hover:underline" href="#">Beranda</a></li>
                 <li><Link href="/buku-tamu"><a className="font-['Public_Sans',Helvetica] text-sm text-slate-300 hover:text-white transition-all hover:underline">Buku Tamu</a></Link></li>
-                <li><a className="font-['Public_Sans',Helvetica] text-sm text-slate-300 hover:text-white transition-all hover:underline" href="#layanan">Layanan</a></li>
+                <li><Link href="/profile"><a className="font-['Public_Sans',Helvetica] text-sm text-slate-300 hover:text-white transition-all hover:underline">Profile</a></Link></li>
               </ul>
             </div>
             <div className="space-y-4">
@@ -313,12 +266,7 @@ export default function LandingPage() {
       </footer>
 
       {/* ── Floating Live Chat Widget ───────────────────────────────────────── */}
-      <div className="fixed bottom-8 right-8 z-[60]">
-        <button className="w-16 h-16 bg-[#00a6e4] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all relative">
-          <LucideIcons.MessageSquare className="w-8 h-8" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#ba1a1a] rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold">1</span>
-        </button>
-      </div>
+      <LiveChatWidget />
     </div>
   );
 }

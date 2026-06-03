@@ -30,30 +30,26 @@ export default function DashboardPage() {
   const arsipData = useConvexQuery(api.arsipSurat.list) || [];
   const pengaduanData = useConvexQuery(api.pengaduanMasyarakat.list) || [];
   const wbsData = useConvexQuery(api.whistleBlowing.list) || [];
+  const visitorStats = useConvexQuery(api.visitorStats.stats, { days: 30 });
 
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
 
-  const { suratMasukBulanIni, suratKeluarBulanIni, totalSurat, bukuTamuTotal, pengaduanBaru, wbsBaru } = useMemo(() => {
+  const { suratMasukTotal, suratKeluarTotal, totalSurat, bukuTamuTotal, pengaduanBaru, wbsBaru } = useMemo(() => {
     let masuk = 0;
     let keluar = 0;
     for (const item of arsipData) {
-      const d = new Date(item.tanggal);
-      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-        if (item.jenis === "Masuk") masuk++;
-        else keluar++;
-      }
+      if (item.jenis === "Masuk") masuk++;
+      else keluar++;
     }
     return {
-      suratMasukBulanIni: masuk,
-      suratKeluarBulanIni: keluar,
+      suratMasukTotal: masuk,
+      suratKeluarTotal: keluar,
       totalSurat: arsipData.length,
       bukuTamuTotal: guestbookData.length,
       pengaduanBaru: pengaduanData.filter((p) => p.status === "Baru").length,
       wbsBaru: wbsData.filter((w) => w.status === "Baru").length,
     };
-  }, [arsipData, guestbookData, pengaduanData, wbsData, currentMonth, currentYear]);
+  }, [arsipData, guestbookData, pengaduanData, wbsData]);
 
   const recentActivities = useMemo(() => {
     const items: { type: string; desc: string; time: string; status: string }[] = [];
@@ -93,12 +89,14 @@ export default function DashboardPage() {
   }, [guestbookData, arsipData, pengaduanData, wbsData]);
 
   const bulanLabel = now.toLocaleString("id-ID", { month: "long" });
+  void bulanLabel;
 
   const statsCards = [
+    { label: "Pengunjung 30 Hari", value: (visitorStats?.totalUnique ?? 0).toLocaleString(), change: `${visitorStats?.todayUnique ?? 0} hari ini`, icon: "👥", color: "bg-sky-50 text-sky-800" },
     { label: "Buku Tamu Masuk", value: bukuTamuTotal.toLocaleString(), change: "Real-time", icon: "📖", color: "bg-green-50 text-green-800" },
-    { label: "Surat Masuk & Keluar Bulan Ini", value: `${suratMasukBulanIni + suratKeluarBulanIni}`, change: `${bulanLabel} ${currentYear}`, icon: "📨", color: "bg-blue-50 text-blue-900" },
-    { label: "Pengaduan Baru", value: pengaduanBaru.toLocaleString(), change: "Belum Diproses", icon: "�", color: "bg-amber-50 text-amber-800" },
-    { label: "WBS Baru", value: wbsBaru.toLocaleString(), change: "Belum Diproses", icon: "�️", color: "bg-red-50 text-red-800" },
+    { label: `Total Arsip Surat (${suratMasukTotal} Masuk · ${suratKeluarTotal} Keluar)`, value: totalSurat.toLocaleString(), change: "Real-time", icon: "📨", color: "bg-blue-50 text-blue-900" },
+    { label: "Pengaduan Baru", value: pengaduanBaru.toLocaleString(), change: "Belum Diproses", icon: "📢", color: "bg-amber-50 text-amber-800" },
+    { label: "WBS Baru", value: wbsBaru.toLocaleString(), change: "Belum Diproses", icon: "🛡️", color: "bg-red-50 text-red-800" },
   ];
 
   return (
@@ -123,7 +121,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Stats Cards */}
-      <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
         {statsCards.map((s, i) => (
           <Card
             key={i}

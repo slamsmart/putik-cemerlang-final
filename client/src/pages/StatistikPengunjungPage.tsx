@@ -24,31 +24,19 @@ export default function StatistikPengunjungPage() {
   const { toast } = useToast();
   const rawData = useConvexQuery(api.guestbook.list) || [];
   const [timeRange, setTimeRange] = useState("30");
+  const visitorStats = useConvexQuery(api.visitorStats.stats, { days: parseInt(timeRange, 10) });
 
   const chartData = useMemo(() => {
-    const dateCounts: Record<string, number> = {};
-    rawData.forEach(item => {
-      const dateStr = (item.tanggal || "").split(" ").slice(0, 3).join(" ");
-      if (dateStr) {
-        dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
-      }
-    });
-
-    const sortedData = Object.keys(dateCounts).map(date => ({
-      name: date,
-      Kunjungan: dateCounts[date]
-    }));
-
-    if (sortedData.length === 0) {
-      return [
-        { name: "Min 5", Kunjungan: 0 },
-        { name: "Sel 7", Kunjungan: 0 },
-        { name: "Kam 9", Kunjungan: 0 },
-        { name: "Sab 11", Kunjungan: 0 },
-      ];
+    if (!visitorStats?.series || visitorStats.series.length === 0) {
+      return [{ name: "Belum ada data", Kunjungan: 0 }];
     }
-    return sortedData;
-  }, [rawData]);
+    return visitorStats.series.map((s) => {
+      // Format label: "07 Mei 2026"
+      const d = new Date(s.dateKey);
+      const label = d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+      return { name: label, Kunjungan: s.unique, Pageviews: s.pageviews };
+    });
+  }, [visitorStats]);
 
   const handleExportPDF = () => {
     if (rawData.length === 0) {
@@ -107,6 +95,23 @@ export default function StatistikPengunjungPage() {
       </header>
 
       <div className="flex flex-col gap-6">
+        {/* Ringkasan Statistik Pengunjung */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: `Unik ${timeRange} Hari`, value: visitorStats?.totalUnique ?? 0, tone: "text-sky-700" },
+            { label: "Unik Hari Ini", value: visitorStats?.todayUnique ?? 0, tone: "text-blue-700" },
+            { label: "Total Pageview", value: visitorStats?.totalPageviews ?? 0, tone: "text-indigo-700" },
+            { label: "Admin Unik", value: visitorStats?.adminUnique ?? 0, tone: "text-amber-700" },
+          ].map((s) => (
+            <Card key={s.label} className="rounded-xl border border-[#c3c6d1] bg-white shadow-sm">
+              <CardContent className="p-5">
+                <div className={`text-2xl font-bold ${s.tone}`}>{s.value.toLocaleString()}</div>
+                <div className="mt-0.5 text-xs text-slate-500">{s.label}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
         <Card className="rounded-xl border border-[#c3c6d1] bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
