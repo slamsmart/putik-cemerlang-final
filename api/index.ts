@@ -4,7 +4,6 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
 import express, { type Request, Response, NextFunction } from "express";
 import multer from "multer";
-import path from "path";
 import fs from "fs";
 import { randomBytes } from "crypto";
 
