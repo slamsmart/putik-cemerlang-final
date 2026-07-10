@@ -3,6 +3,9 @@ import PublicNavbar from "@/components/PublicNavbar";
 import * as LucideIcons from "lucide-react";
 
 export default function ProfilePage() {
+  const standarPelayananPdfUrl =
+    "https://res.cloudinary.com/dsvpg5uco/raw/upload/v1782877498/putik-cemerlang/arsip-surat/standar-pelayanan-cabdin-kp-kab-malang.pdf";
+  const standarPelayananPreviewUrl = `/api/pdf-proxy?url=${encodeURIComponent(standarPelayananPdfUrl)}`;
 
   return (
     <div className="bg-[#f7f9fb] text-[#191c1e] font-['Inter',Helvetica] min-h-screen">
@@ -79,17 +82,14 @@ export default function ProfilePage() {
                 <text x="260" y="66" textAnchor="middle" fill="white" fontSize="13" fontWeight="800">DAN PERIKANAN</text>
                 <text x="260" y="82" textAnchor="middle" fill="white" fontSize="13" fontWeight="800">KABUPATEN MALANG</text>
                 <rect x="450" y="105" width="240" height="75" rx="12" fill="url(#tuGrad)" filter="url(#shadow)" />
-                <text x="570" y="128" textAnchor="middle" fill="#e9d5ff" fontSize="9" fontWeight="700" letterSpacing="2">ADMINISTRASI</text>
-                <text x="570" y="148" textAnchor="middle" fill="white" fontSize="13" fontWeight="800">SUB BAGIAN</text>
-                <text x="570" y="165" textAnchor="middle" fill="white" fontSize="13" fontWeight="800">TATA USAHA</text>
+                <text x="570" y="140" textAnchor="middle" fill="white" fontSize="13" fontWeight="800">SUB BAGIAN</text>
+                <text x="570" y="158" textAnchor="middle" fill="white" fontSize="13" fontWeight="800">TATA USAHA</text>
                 <rect x="15" y="265" width="175" height="80" rx="12" fill="url(#seksi1Grad)" filter="url(#shadow)" />
-                <text x="102" y="288" textAnchor="middle" fill="#ccfbf1" fontSize="9" fontWeight="700" letterSpacing="2">BIDANG</text>
-                <text x="102" y="307" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">SEKSI KONSERVASI</text>
-                <text x="102" y="323" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">KELAUTAN</text>
+                <text x="102" y="304" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">SEKSI KONSERVASI</text>
+                <text x="102" y="322" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">KELAUTAN</text>
                 <rect x="333" y="265" width="175" height="80" rx="12" fill="url(#seksi2Grad)" filter="url(#shadow)" />
-                <text x="420" y="288" textAnchor="middle" fill="#e0f2fe" fontSize="9" fontWeight="700" letterSpacing="2">BIDANG</text>
-                <text x="420" y="307" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">SEKSI VERIFIKASI</text>
-                <text x="420" y="323" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">DAN PERIZINAN</text>
+                <text x="420" y="304" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">SEKSI VERIFIKASI</text>
+                <text x="420" y="322" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">DAN PERIZINAN</text>
               </svg>
             </div>
             <div className="mt-6 flex flex-wrap gap-4 justify-center text-xs text-[#5f5e5e]">
@@ -99,6 +99,58 @@ export default function ProfilePage() {
               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-[#0369a1]"></div> Seksi Verifikasi dan Perizinan</div>
             </div>
           </div>
+
+          <section className="mt-16 overflow-hidden rounded-2xl border border-[#c3c6d1] bg-white shadow-[0px_2px_10px_#0000000a]">
+            <div className="bg-[#001e40] px-6 py-5 text-center md:px-10">
+              <h2 className="font-['Public_Sans',Helvetica] text-lg font-bold uppercase leading-snug text-white md:text-2xl">
+                Standar Pelayanan Cabang Dinas Kelautan dan Perikanan Kab. Malang
+              </h2>
+            </div>
+            <div className="space-y-5 px-4 py-6 md:px-8 md:py-8">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-start gap-3 text-[#5f5e5e]">
+                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#d5e3ff] text-[#001e40]">
+                    <LucideIcons.FileText className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-['Public_Sans',Helvetica] text-sm font-semibold text-[#001e40]">
+                      Dokumen Standar Pelayanan
+                    </p>
+                    <p className="mt-1 text-sm leading-6">
+                      Preview dokumen resmi tersedia langsung dari Cloudinary.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href={standarPelayananPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full border border-[#c3c6d1] px-4 py-2 text-sm font-semibold text-[#001e40] transition-colors hover:bg-[#f7f9fb]"
+                  >
+                    <LucideIcons.ExternalLink className="h-4 w-4" />
+                    Buka PDF
+                  </a>
+                  <a
+                    href={standarPelayananPdfUrl}
+                    download
+                    className="inline-flex items-center gap-2 rounded-full bg-[#003a7a] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#001e40]"
+                  >
+                    <LucideIcons.Download className="h-4 w-4" />
+                    Unduh
+                  </a>
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-[#c3c6d1] bg-[#242628]">
+                <iframe
+                  src={standarPelayananPreviewUrl}
+                  title="Preview Standar Pelayanan Cabang Dinas Kelautan dan Perikanan Kab. Malang"
+                  className="h-[72vh] min-h-[520px] w-full bg-[#242628]"
+                />
+              </div>
+            </div>
+          </section>
         </div>
       </main>
 

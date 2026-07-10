@@ -308,7 +308,7 @@ export default function ArsipSuratPage() {
         }
       }
       // Append any new fields not in saved order (newly added columns)
-      for (const item of map.values()) {
+      for (const item of Array.from(map.values())) {
         ordered.push(item);
       }
       return ordered;

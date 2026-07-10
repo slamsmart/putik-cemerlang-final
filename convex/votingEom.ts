@@ -50,6 +50,35 @@ export const getPeriode = query({
   },
 });
 
+export const getEomHeading = query({
+  args: {},
+  handler: async (ctx) => {
+    const setting = await ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", "eomHeading"))
+      .first();
+    return {
+      title: setting?.value || "Pegawai Teladan Triwulan I",
+      subtitle: setting?.label || "Apresiasi dedikasi dan kinerja terbaik rekan kerja Anda. Berikan suara untuk kandidat yang paling mencerminkan nilai integritas Cabang Dinas Kelautan dan Perikanan Kabupaten Malang.",
+    };
+  },
+});
+
+export const updateEomHeading = mutation({
+  args: { title: v.string(), subtitle: v.string() },
+  handler: async (ctx, args) => {
+    const setting = await ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", "eomHeading"))
+      .first();
+    if (setting) {
+      await ctx.db.patch(setting._id, { value: args.title, label: args.subtitle });
+    } else {
+      await ctx.db.insert("settings", { key: "eomHeading", value: args.title, label: args.subtitle });
+    }
+  },
+});
+
 export const getVoteStats = query({
   args: { periode: v.optional(v.string()) },
   handler: async (ctx, args) => {
@@ -104,6 +133,67 @@ export const checkVotedByDevice = query({
       )
       .first();
     return !!existing;
+  },
+});
+
+// Cek vote berdasarkan Gmail — deduplication utama setelah Google Sign-In
+export const checkVotedByEmail = query({
+  args: { voterEmail: v.string(), periode: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("eomVotes")
+      .withIndex("by_voterEmail_periode", (q) =>
+        q.eq("voterEmail", args.voterEmail).eq("periode", args.periode)
+      )
+      .first();
+    return !!existing;
+  },
+});
+
+// Daftar nama pemilih untuk periode (publik — tanpa email)
+export const getVoterNames = query({
+  args: { periode: v.string() },
+  handler: async (ctx, args) => {
+    const allVotes = await ctx.db.query("eomVotes").collect();
+    return allVotes
+      .filter((v) => v.periode === args.periode && v.voterName)
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .map((v) => ({ name: v.voterName as string, createdAt: v.createdAt }));
+  },
+});
+
+// Ambil whitelist email karyawan cabdin malang
+export const getEomWhitelist = query({
+  args: {},
+  handler: async (ctx) => {
+    const setting = await ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", "eomAllowedEmails"))
+      .first();
+    if (!setting?.value) return [];
+    try {
+      return JSON.parse(setting.value) as string[];
+    } catch {
+      return [];
+    }
+  },
+});
+
+// Update whitelist email (hanya admin)
+export const setEomWhitelist = mutation({
+  args: { emails: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    const normalized = args.emails.map((e) => e.toLowerCase().trim()).filter(Boolean);
+    const setting = await ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", "eomAllowedEmails"))
+      .first();
+    const value = JSON.stringify(normalized);
+    if (setting) {
+      await ctx.db.patch(setting._id, { value });
+    } else {
+      await ctx.db.insert("settings", { key: "eomAllowedEmails", value });
+    }
   },
 });
 
@@ -258,6 +348,8 @@ export const castVote = mutation({
     candidateId: v.id("eomCandidates"),
     ipAddress: v.string(),
     voterId: v.optional(v.string()), // UUID browser untuk deteksi per-device
+    voterEmail: v.optional(v.string()), // Gmail dari Google Sign-In
+    voterName: v.optional(v.string()),  // Nama profil Google
     periode: v.string(),
   },
   handler: async (ctx, args) => {
@@ -280,25 +372,42 @@ export const castVote = mutation({
       throw new Error(`Kuota voting sudah penuh (${MAX_VOTES} dari ${MAX_VOTES} pemilih).`);
     }
 
-    // HANYA blokir by voterId (UUID device/browser dari localStorage)
-    // IP TIDAK digunakan untuk memblokir — hanya dicatat untuk audit
-    if (args.voterId) {
-      const existingByDevice = await ctx.db
-        .query("eomVotes")
-        .withIndex("by_voterId_periode", (q) =>
-          q.eq("voterId", args.voterId).eq("periode", args.periode)
-        )
-        .first();
-      if (existingByDevice) {
-        throw new Error("Perangkat ini sudah digunakan untuk memilih pada periode ini.");
+    // Wajib login Google
+    if (!args.voterEmail) {
+      throw new Error("Harus login dengan Google untuk memberikan suara.");
+    }
+
+    // Cek whitelist — jika ada, email harus terdaftar
+    const whitelistSetting = await ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", "eomAllowedEmails"))
+      .first();
+    if (whitelistSetting?.value) {
+      let allowed: string[] = [];
+      try { allowed = JSON.parse(whitelistSetting.value); } catch { allowed = []; }
+      if (allowed.length > 0 && !allowed.includes(args.voterEmail.toLowerCase())) {
+        throw new Error("Email Anda tidak terdaftar sebagai karyawan Cabdin KP Kab. Malang. Hubungi admin jika ini kesalahan.");
       }
     }
 
-    // Rekam vote — IP dicatat untuk audit, BUKAN untuk memblokir
+    // Deduplication by email (primer) — satu akun Google = satu suara
+    const existingByEmail = await ctx.db
+      .query("eomVotes")
+      .withIndex("by_voterEmail_periode", (q) =>
+        q.eq("voterEmail", args.voterEmail).eq("periode", args.periode)
+      )
+      .first();
+    if (existingByEmail) {
+      throw new Error("Akun Google ini sudah digunakan untuk memilih pada periode ini.");
+    }
+
+    // Rekam vote — IP + email dicatat untuk audit
     await ctx.db.insert("eomVotes", {
       candidateId: args.candidateId,
       ipAddress: args.ipAddress,
       voterId: args.voterId,
+      voterEmail: args.voterEmail,
+      voterName: args.voterName,
       periode: args.periode,
       createdAt: Date.now(),
     });
@@ -316,7 +425,7 @@ export const castVote = mutation({
       if (setting) {
         await ctx.db.patch(setting._id, { value: "closed" });
       } else {
-        await ctx.db.insert("settings", { key: "eomVotingStatus", value: "closed", label: "EOM Voting Status" });
+        await ctx.db.insert("settings", { key: "eomVotingStatus", value: "closed" });
       }
     }
   },
@@ -325,9 +434,7 @@ export const castVote = mutation({
 export const resetVotes = mutation({
   args: { periode: v.string() },
   handler: async (ctx, args) => {
-    // HANYA reset voteCount pada kandidat — catatan eomVotes (audit IP) TIDAK pernah dihapus.
-    // Ini menjaga integritas audit trail: siapa memilih siapa, kapan, dan dari IP mana
-    // tidak bisa diubah atau dihilangkan oleh admin.
+    // Reset voteCount kandidat
     const candidates = await ctx.db
       .query("eomCandidates")
       .withIndex("by_periode", (q) => q.eq("periode", args.periode))
@@ -335,7 +442,26 @@ export const resetVotes = mutation({
     for (const c of candidates) {
       await ctx.db.patch(c._id, { voteCount: 0 });
     }
-    // eomVotes records dibiarkan — TIDAK dihapus — agar histori voting permanen.
+    // Hapus semua eomVotes records untuk periode ini
+    const allVotes = await ctx.db.query("eomVotes").collect();
+    const votes = allVotes.filter((v) => v.periode === args.periode);
+    for (const vote of votes) {
+      await ctx.db.delete(vote._id);
+    }
+  },
+});
+
+export const deleteVote = mutation({
+  args: { voteId: v.id("eomVotes") },
+  handler: async (ctx, args) => {
+    const vote = await ctx.db.get(args.voteId);
+    if (!vote) throw new Error("Vote tidak ditemukan.");
+    // Kurangi voteCount kandidat
+    const candidate = await ctx.db.get(vote.candidateId);
+    if (candidate && candidate.voteCount > 0) {
+      await ctx.db.patch(vote.candidateId, { voteCount: candidate.voteCount - 1 });
+    }
+    await ctx.db.delete(args.voteId);
   },
 });
 

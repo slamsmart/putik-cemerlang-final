@@ -28,6 +28,8 @@ import KontakPage from "@/pages/KontakPage";
 import ProfilePage from "@/pages/ProfilePage";
 import VotingEOMPage from "@/pages/VotingEOMPage";
 import VotingEOMAdminPage from "@/pages/VotingEOMAdminPage";
+import SkmPage from "@/pages/SkmPage";
+import SkmAdminPage from "@/pages/SkmAdminPage";
 
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || "https://fabulous-lemur-912.convex.cloud";
 const convex = new ConvexReactClient(CONVEX_URL);
@@ -62,8 +64,10 @@ function Router() {
       <Route path="/pelaporan-gratifikasi" component={PelaporanGratifikasiPage} />
       <Route path="/kontak" component={KontakPage} />
       <Route path="/profile" component={ProfilePage} />
+      <Route path="/skm/:slug" component={SkmPage} />
       <Route path="/voting-eom" component={VotingEOMPage} />
       <Route path="/admin/voting-eom" component={() => <ProtectedRoute component={VotingEOMAdminPage} />} />
+      <Route path="/admin/skm" component={() => <ProtectedRoute component={SkmAdminPage} />} />
       <Route path="/admin/pelaporan-gratifikasi" component={() => <ProtectedRoute component={GratifikasiAdminPage} />} />
       <Route component={NotFound} />
     </Switch>

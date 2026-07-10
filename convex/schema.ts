@@ -52,9 +52,24 @@ export default defineSchema({
     isActive: v.boolean(),
   }).index("by_displayOrder", ["displayOrder"]),
 
+  skmEntries: defineTable({
+    title: v.string(),
+    slug: v.string(),
+    year: v.number(),
+    quarter: v.string(),
+    imageUrl: v.optional(v.string()),
+    description: v.optional(v.string()),
+    displayOrder: v.number(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_displayOrder", ["displayOrder"])
+    .index("by_slug", ["slug"])
+    .index("by_year_and_displayOrder", ["year", "displayOrder"]),
+
   settings: defineTable({
     key: v.string(),
     value: v.string(),
+    label: v.optional(v.string()),
   }).index("by_key", ["key"]),
 
   pengaduanMasyarakat: defineTable({
@@ -115,11 +130,14 @@ export default defineSchema({
     candidateId: v.id("eomCandidates"),
     ipAddress: v.string(),
     voterId: v.optional(v.string()), // UUID unik per browser/device (localStorage)
+    voterEmail: v.optional(v.string()), // Gmail dari Google Sign-In
+    voterName: v.optional(v.string()),  // Nama profil Google (ditampilkan publik)
     periode: v.string(),
     createdAt: v.number(),
   }).index("by_ip_periode", ["ipAddress", "periode"])
     .index("by_candidateId", ["candidateId"])
-    .index("by_voterId_periode", ["voterId", "periode"]),
+    .index("by_voterId_periode", ["voterId", "periode"])
+    .index("by_voterEmail_periode", ["voterEmail", "periode"]),
 
   // ── Visitor Tracking ────────────────────────────────────────────────────────
   // Satu record per visitorId per hari (YYYY-MM-DD). Increment `pageviews`

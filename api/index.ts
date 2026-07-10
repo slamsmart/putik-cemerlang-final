@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // ── Convex Client ─────────────────────────────────────────────────────────────
-const CONVEX_URL = (process.env.CONVEX_URL || "https://fabulous-lemur-912.convex.cloud").trim();
+const CONVEX_URL = "https://fabulous-lemur-912.convex.cloud";
 
 async function convexQuery(queryPath: string, args: Record<string, unknown> = {}) {
   const res = await fetch(`${CONVEX_URL}/api/query`, {
@@ -609,6 +609,69 @@ app.delete("/api/pelaporan-gratifikasi/:id", async (req: Request, res: Response)
 });
 
 // ── NVIDIA Chatbot ────────────────────────────────────────────────────────────
+app.get("/api/skm", async (_req: Request, res: Response) => {
+  try {
+    const data = await convexQuery("skm:list");
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to load SKM" });
+  }
+});
+
+app.post("/api/skm", async (req: Request, res: Response) => {
+  try {
+    const id = await convexMutation("skm:create", {
+      title: String(req.body.title || ""),
+      slug: String(req.body.slug || ""),
+      year: Number(req.body.year) || new Date().getFullYear(),
+      quarter: String(req.body.quarter || ""),
+      imageUrl: req.body.imageUrl ? String(req.body.imageUrl) : undefined,
+      description: req.body.description ? String(req.body.description) : undefined,
+      displayOrder: Number(req.body.displayOrder) || 0,
+      isActive: Boolean(req.body.isActive),
+    });
+    res.status(201).json({ id });
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to create SKM" });
+  }
+});
+
+app.post("/api/skm/seed-2025", async (_req: Request, res: Response) => {
+  try {
+    await convexMutation("skm:seed2025", {});
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to seed SKM" });
+  }
+});
+
+app.patch("/api/skm/:id", async (req: Request, res: Response) => {
+  try {
+    const args: Record<string, unknown> = { id: req.params.id };
+    if (req.body.title !== undefined) args.title = String(req.body.title);
+    if (req.body.slug !== undefined) args.slug = String(req.body.slug);
+    if (req.body.year !== undefined) args.year = Number(req.body.year);
+    if (req.body.quarter !== undefined) args.quarter = String(req.body.quarter);
+    if (req.body.imageUrl !== undefined) args.imageUrl = req.body.imageUrl ? String(req.body.imageUrl) : "";
+    if (req.body.description !== undefined) args.description = req.body.description ? String(req.body.description) : "";
+    if (req.body.displayOrder !== undefined) args.displayOrder = Number(req.body.displayOrder);
+    if (req.body.isActive !== undefined) args.isActive = Boolean(req.body.isActive);
+    await convexMutation("skm:update", args);
+    res.status(204).end();
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to update SKM" });
+  }
+});
+
+app.delete("/api/skm/:id", async (req: Request, res: Response) => {
+  try {
+    await convexMutation("skm:remove", { id: req.params.id });
+    res.status(204).end();
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message || "Failed to delete SKM" });
+  }
+});
+
 app.post("/api/chatbot", async (req: Request, res: Response) => {
   try {
     const { message } = req.body as { message?: string };

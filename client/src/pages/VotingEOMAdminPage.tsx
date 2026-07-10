@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Award, Upload, Trash2, Plus, RotateCcw, Trophy, Users, Vote, CalendarDays, ImagePlus, Lock, Unlock, GripVertical, Move, History, Info, Clock, CheckCircle2
+  Award, Upload, Trash2, Plus, RotateCcw, Trophy, Users, Vote, CalendarDays, ImagePlus, Lock, Unlock, GripVertical, Move, History, Info, Clock, CheckCircle2, ShieldCheck, X
 } from "lucide-react";
 
 
@@ -169,6 +169,19 @@ export default function VotingEOMAdminPage() {
   const [isEditingPeriode, setIsEditingPeriode] = useState(false);
   const updatePeriode = useConvexMutation(api.votingEom.updatePeriode);
 
+  const headingData = useConvexQuery(api.votingEom.getEomHeading);
+  const updateEomHeading = useConvexMutation(api.votingEom.updateEomHeading);
+  const [isEditingHeading, setIsEditingHeading] = useState(false);
+  const [headingTitle, setHeadingTitle] = useState("");
+  const [headingSubtitle, setHeadingSubtitle] = useState("");
+
+  useEffect(() => {
+    if (headingData && !isEditingHeading) {
+      setHeadingTitle(headingData.title);
+      setHeadingSubtitle(headingData.subtitle);
+    }
+  }, [headingData]);
+
   // Sync input with setting when it loads
   useEffect(() => {
     if (currentPeriodeSetting && !periodeInput) {
@@ -197,10 +210,16 @@ export default function VotingEOMAdminPage() {
   const history = useConvexQuery(api.votingEom.getPeriodeHistory) ?? [];
   const votes = useConvexQuery(api.votingEom.getVotesWithDetails, { periode }) ?? [];
 
+  const whitelist = useConvexQuery(api.votingEom.getEomWhitelist) ?? [];
+  const setEomWhitelist = useConvexMutation(api.votingEom.setEomWhitelist);
+  const deleteVote = useConvexMutation(api.votingEom.deleteVote);
+
   const [candidates, setCandidates] = useState<EomCandidate[]>([]);
   const [showVotes, setShowVotes] = useState(false);
   const [deadlineInput, setDeadlineInput] = useState("");
   const [isEditingDeadline, setIsEditingDeadline] = useState(false);
+  const [showWhitelist, setShowWhitelist] = useState(false);
+  const [whitelistInput, setWhitelistInput] = useState("");
 
   useEffect(() => {
     if (allCandidates.length > 0) {
@@ -261,12 +280,22 @@ export default function VotingEOMAdminPage() {
   };
 
   const handleReset = async () => {
-    if (!confirm("Reset hitungan suara periode ini?\n\nCatatan: data audit (IP address & waktu voting) TIDAK akan dihapus — histori tetap tersimpan permanen untuk keperluan audit.")) return;
+    if (!confirm("Reset semua suara periode ini?\n\nSemua data voting (hitungan + catatan audit Gmail/IP) akan DIHAPUS permanen. Lanjutkan?")) return;
     try {
       await resetVotes({ periode });
-      toast({ title: "Hitungan suara direset", description: "Histori audit IP tetap tersimpan." });
+      toast({ title: "Semua suara dihapus", description: "Voting bisa dimulai ulang." });
     } catch {
       toast({ title: "Gagal mereset suara", variant: "destructive" });
+    }
+  };
+
+  const handleUpdateHeading = async () => {
+    try {
+      await updateEomHeading({ title: headingTitle, subtitle: headingSubtitle });
+      setIsEditingHeading(false);
+      toast({ title: "Heading voting diperbarui" });
+    } catch {
+      toast({ title: "Gagal memperbarui heading", variant: "destructive" });
     }
   };
 
@@ -495,6 +524,72 @@ export default function VotingEOMAdminPage() {
             </CardContent>
           </Card>
 
+          <Card className="rounded-2xl border-none bg-white shadow-sm overflow-hidden group">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Judul & Deskripsi</span>
+                <div className="p-2 bg-slate-50 rounded-xl">
+                  <Award className="w-4 h-4 text-blue-500" />
+                </div>
+              </div>
+              {isEditingHeading ? (
+                <div className="flex flex-col gap-2 mt-1">
+                  <Input
+                    value={headingTitle}
+                    onChange={(e) => setHeadingTitle(e.target.value)}
+                    placeholder="Pegawai Teladan Triwulan I"
+                    className="text-sm border-blue-200 focus-visible:ring-blue-400"
+                  />
+                  <textarea
+                    value={headingSubtitle}
+                    onChange={(e) => setHeadingSubtitle(e.target.value)}
+                    placeholder="Deskripsi singkat..."
+                    rows={3}
+                    className="text-sm border border-blue-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1 h-9 bg-[#001e40] hover:bg-[#001e40]/90 text-white gap-1.5 text-sm"
+                      onClick={handleUpdateHeading}
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> Simpan
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 h-9 text-slate-500 border-slate-200 text-sm"
+                      onClick={() => {
+                        setIsEditingHeading(false);
+                        if (headingData) {
+                          setHeadingTitle(headingData.title);
+                          setHeadingSubtitle(headingData.subtitle);
+                        }
+                      }}
+                    >
+                      Batal
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="text-base font-bold text-[#001e40] font-sans line-clamp-2">
+                    {headingTitle || "Pegawai Teladan Triwulan I"}
+                  </div>
+                  <p className="text-xs text-slate-500 line-clamp-3">
+                    {headingSubtitle || "Apresiasi dedikasi dan kinerja terbaik..."}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-blue-600 hover:bg-blue-50 h-7 px-2 self-start mt-1"
+                    onClick={() => setIsEditingHeading(true)}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="rounded-xl border border-slate-200 bg-white shadow-sm">
             <CardContent className="flex flex-col gap-4 p-4 sm:p-6">
               <h2 className="text-base font-semibold text-[#001e40] [font-family:'Public_Sans',Helvetica] flex items-center gap-2">
@@ -547,7 +642,18 @@ export default function VotingEOMAdminPage() {
                 onClick={() => setShowVotes(true)}
                 className="w-full gap-2 border-slate-200 text-slate-600 hover:bg-slate-50"
               >
-                <Users className="w-4 h-4" /> Lihat Daftar Pemilih (IP)
+                <Users className="w-4 h-4" /> Lihat Daftar Pemilih
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => setShowWhitelist(true)}
+                className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+              >
+                <ShieldCheck className="w-4 h-4" /> Whitelist Email Karyawan
+                {whitelist.length > 0 && (
+                  <span className="ml-auto bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{whitelist.length}</span>
+                )}
               </Button>
               
               <div className="h-px bg-slate-100 my-1"></div>
@@ -645,6 +751,7 @@ export default function VotingEOMAdminPage() {
                 <thead className="bg-slate-50 text-slate-500 font-medium">
                   <tr>
                     <th className="px-4 py-3 border-b">#</th>
+                    <th className="px-4 py-3 border-b">Gmail</th>
                     <th className="px-4 py-3 border-b">IP Address</th>
                     <th className="px-4 py-3 border-b">Pilihan</th>
                     <th className="px-4 py-3 border-b">Waktu</th>
@@ -653,18 +760,35 @@ export default function VotingEOMAdminPage() {
                 <tbody className="divide-y divide-slate-100">
                   {votes.length > 0 ? (
                     votes.map((v: any, idx: number) => (
-                      <tr key={idx} className="hover:bg-slate-50/50">
+                      <tr key={idx} className="hover:bg-slate-50/50 group">
                         <td className="px-4 py-3 text-slate-400 text-xs">{votes.length - idx}</td>
+                        <td className="px-4 py-3 text-xs text-blue-700 font-medium">{v.voterEmail || <span className="text-slate-300 italic">—</span>}</td>
                         <td className="px-4 py-3 font-mono text-xs bg-slate-50/50">{v.ipAddress}</td>
                         <td className="px-4 py-3 font-medium text-[#001e40]">{v.candidateName}</td>
                         <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
                           {new Date(v.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
                         </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Hapus vote dari ${v.voterEmail || v.ipAddress}?`)) return;
+                              try {
+                                await deleteVote({ voteId: v._id });
+                                toast({ title: "Vote dihapus" });
+                              } catch {
+                                toast({ title: "Gagal menghapus", variant: "destructive" });
+                              }
+                            }}
+                            className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-slate-400 italic">Belum ada suara masuk</td>
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-400 italic">Belum ada suara masuk</td>
                     </tr>
                   )}
                 </tbody>
@@ -673,6 +797,89 @@ export default function VotingEOMAdminPage() {
             {votes.length > 0 && (
               <p className="text-xs text-slate-400 text-center mt-3">
                 Total {votes.length} suara tercatat — diurutkan dari yang terbaru
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* ── Whitelist Dialog ── */}
+      <Dialog open={showWhitelist} onOpenChange={setShowWhitelist}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-3">
+            <DialogTitle className="text-xl font-bold text-[#001e40] flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-blue-500" /> Whitelist Email Karyawan
+            </DialogTitle>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Hanya email yang terdaftar di sini yang dapat memberikan suara. Kosongkan daftar untuk membuka voting ke semua akun Google.
+            </p>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto p-6 pt-2 flex flex-col gap-4">
+            {/* Add email input */}
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={whitelistInput}
+                onChange={(e) => setWhitelistInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const email = whitelistInput.toLowerCase().trim();
+                    if (email && !whitelist.includes(email)) {
+                      setEomWhitelist({ emails: [...whitelist, email] });
+                      toast({ title: `${email} ditambahkan` });
+                    }
+                    setWhitelistInput("");
+                  }
+                }}
+                placeholder="nama@gmail.com"
+                className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <Button
+                className="bg-[#001e40] hover:bg-[#001e40]/90 text-white text-sm px-4"
+                onClick={() => {
+                  const email = whitelistInput.toLowerCase().trim();
+                  if (!email) return;
+                  if (whitelist.includes(email)) {
+                    toast({ title: "Email sudah ada", variant: "destructive" });
+                    return;
+                  }
+                  setEomWhitelist({ emails: [...whitelist, email] });
+                  toast({ title: `${email} ditambahkan` });
+                  setWhitelistInput("");
+                }}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Email list */}
+            {whitelist.length === 0 ? (
+              <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+                <ShieldCheck className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm font-medium">Whitelist kosong</p>
+                <p className="text-xs mt-1">Semua akun Google bisa vote. Tambahkan email untuk membatasi.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {whitelist.map((email) => (
+                  <div key={email} className="flex items-center justify-between px-3 py-2.5 bg-slate-50 rounded-lg border border-slate-100 group">
+                    <span className="text-sm font-mono text-slate-700">{email}</span>
+                    <button
+                      onClick={() => {
+                        setEomWhitelist({ emails: whitelist.filter((e) => e !== email) });
+                        toast({ title: `${email} dihapus dari whitelist` });
+                      }}
+                      className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {whitelist.length > 0 && (
+              <p className="text-xs text-slate-400 text-center">
+                {whitelist.length} email terdaftar — hanya mereka yang bisa vote
               </p>
             )}
           </div>

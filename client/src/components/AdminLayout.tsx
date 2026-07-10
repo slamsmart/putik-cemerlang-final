@@ -41,6 +41,11 @@ const primaryNavItems = [
     href: "/admin/voting-eom",
   },
   {
+    label: "Data SKM",
+    icon: "/figmaAssets/container-12.svg",
+    href: "/admin/skm",
+  },
+  {
     label: "Konten & Slider",
     icon: "/figmaAssets/container-2.svg",
     href: "/admin/konten-slider",

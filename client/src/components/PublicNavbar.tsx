@@ -3,12 +3,23 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { groupSkmEntriesByYear, skmPath, type PublicSkmEntry } from "@/lib/skm";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Menu } from "lucide-react";
 
 export default function PublicNavbar() {
   const [location, setLocation] = useLocation();
+  const { data: skmData } = useQuery<PublicSkmEntry[]>({
+    queryKey: ["/api/skm"],
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
+  const skmEntries = (skmData ?? []).filter((entry) => entry.isActive);
+  const skmGroups = groupSkmEntriesByYear(skmEntries);
 
   const isActive = (path: string) => {
     if (path === "/") return location === "/";
@@ -59,6 +70,39 @@ export default function PublicNavbar() {
               Voting EOM
             </a>
           </Link>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className={`flex items-center gap-1 font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight transition-colors focus:outline-none ${
+                isActive("/skm") ? "text-blue-700 border-b-2 border-blue-700 pb-1" : "text-slate-600 hover:text-blue-900"
+              }`}
+            >
+              SKM <ChevronDown className="h-3 w-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              sideOffset={8}
+              style={{ backgroundColor: "#001e40", borderColor: "#0b2a52" }}
+              className="min-w-[260px] rounded-xl border p-1.5 shadow-lg"
+            >
+              {skmGroups.map((group) => (
+                <div key={group.year} className="py-1 first:pt-0">
+                  <DropdownMenuLabel className="px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-[#b8d7f4]">
+                    Tahun {group.year}
+                  </DropdownMenuLabel>
+                  {group.items.map((entry) => (
+                    <DropdownMenuItem
+                      key={entry.slug}
+                      className="cursor-pointer rounded-lg px-4 py-3 text-sm font-semibold text-white hover:bg-[#0b2a52] hover:text-white focus:bg-[#0b2a52] focus:text-white"
+                      onSelect={() => setLocation(skmPath(entry.slug))}
+                    >
+                      {entry.title}
+                    </DropdownMenuItem>
+                  ))}
+                </div>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 font-['Public_Sans',Helvetica] text-sm font-semibold tracking-tight text-slate-600 transition-colors hover:text-blue-900 focus:outline-none">

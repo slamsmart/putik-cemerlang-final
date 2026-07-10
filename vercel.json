@@ -9,6 +9,20 @@
       "includeFiles": "server/**"
     }
   },
+  "headers": [
+    {
+      "source": "/",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/:path((?!api/|assets/|.*\\..*).*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api" },
     { "source": "/:path((?!api/|assets/|.*\\..*).*)", "destination": "/api/index.ts" }

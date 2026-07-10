@@ -585,6 +585,77 @@ export async function registerRoutes(httpServer: Server | null, app: Express): P
     }
   });
 
+  // SKM menu and content (local Convex proxy)
+  app.get("/api/skm", async (_req: Request, res: Response) => {
+    try {
+      const { convexQuery } = await import("./convexClient");
+      const data = await convexQuery("skm:list");
+      res.json(data);
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to load SKM" });
+    }
+  });
+
+  app.post("/api/skm", async (req: Request, res: Response) => {
+    try {
+      const { convexMutation } = await import("./convexClient");
+      const id = await convexMutation("skm:create", {
+        title: String(req.body.title || ""),
+        slug: String(req.body.slug || ""),
+        year: Number(req.body.year) || new Date().getFullYear(),
+        quarter: String(req.body.quarter || ""),
+        imageUrl: req.body.imageUrl ? String(req.body.imageUrl) : undefined,
+        description: req.body.description ? String(req.body.description) : undefined,
+        displayOrder: Number(req.body.displayOrder) || 0,
+        isActive: Boolean(req.body.isActive),
+      });
+      res.status(201).json({ id });
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to create SKM" });
+    }
+  });
+
+  app.post("/api/skm/seed-2025", async (_req: Request, res: Response) => {
+    try {
+      const { convexMutation } = await import("./convexClient");
+      await convexMutation("skm:seed2025", {});
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to seed SKM" });
+    }
+  });
+
+  app.patch("/api/skm/:id", async (req: Request, res: Response) => {
+    try {
+      const { convexMutation } = await import("./convexClient");
+      const args: Record<string, unknown> = { id: req.params.id as string };
+      if (req.body.title !== undefined) args.title = String(req.body.title);
+      if (req.body.slug !== undefined) args.slug = String(req.body.slug);
+      if (req.body.year !== undefined) args.year = Number(req.body.year);
+      if (req.body.quarter !== undefined) args.quarter = String(req.body.quarter);
+      if (req.body.imageUrl !== undefined) args.imageUrl = req.body.imageUrl ? String(req.body.imageUrl) : "";
+      if (req.body.description !== undefined) {
+        args.description = req.body.description ? String(req.body.description) : "";
+      }
+      if (req.body.displayOrder !== undefined) args.displayOrder = Number(req.body.displayOrder);
+      if (req.body.isActive !== undefined) args.isActive = Boolean(req.body.isActive);
+      await convexMutation("skm:update", args);
+      res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to update SKM" });
+    }
+  });
+
+  app.delete("/api/skm/:id", async (req: Request, res: Response) => {
+    try {
+      const { convexMutation } = await import("./convexClient");
+      await convexMutation("skm:remove", { id: req.params.id as string });
+      res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to delete SKM" });
+    }
+  });
+
   app.post("/api/chatbot", async (req: Request, res: Response) => {
     try {
       const { message } = req.body as { message?: string };

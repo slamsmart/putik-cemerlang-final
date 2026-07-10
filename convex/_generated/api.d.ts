@@ -14,6 +14,7 @@ import type * as gratifikasi from "../gratifikasi.js";
 import type * as guestbook from "../guestbook.js";
 import type * as pengaduanMasyarakat from "../pengaduanMasyarakat.js";
 import type * as settings from "../settings.js";
+import type * as skm from "../skm.js";
 import type * as sliders from "../sliders.js";
 import type * as stats from "../stats.js";
 import type * as visitorStats from "../visitorStats.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   guestbook: typeof guestbook;
   pengaduanMasyarakat: typeof pengaduanMasyarakat;
   settings: typeof settings;
+  skm: typeof skm;
   sliders: typeof sliders;
   stats: typeof stats;
   visitorStats: typeof visitorStats;
