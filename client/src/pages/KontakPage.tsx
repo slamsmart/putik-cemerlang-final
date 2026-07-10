@@ -2,16 +2,17 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import PublicNavbar from "@/components/PublicNavbar";
 import {
-  MapPin, Clock, Globe,
+  MapPin, Clock, Globe, Phone,
   Navigation, ExternalLink, Building2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const quickFacts = [
   { icon: <Building2 className="h-5 w-5" />, label: "Instansi", value: "Cabang Dinas Kelautan dan Perikanan Kab. Malang" },
-  { icon: <MapPin className="h-5 w-5" />, label: "Alamat", value: "Jl. Semeru No. 1, Kepanjen, Kabupaten Malang, Jawa Timur 65163" },
+  { icon: <MapPin className="h-5 w-5" />, label: "Alamat", value: "Jl. Trunojoyo 12 Kepanjen Malang 65153" },
   { icon: <Clock className="h-5 w-5" />, label: "Jam Operasional", value: "Senin–Jumat, 07.30–16.00 WIB" },
-  { icon: <Globe className="h-5 w-5" />, label: "Website Resmi", value: "dkp.jatimprov.go.id" },
+  { icon: <Phone className="h-5 w-5" />, label: "Telepon", value: "(0341) 395059" },
+  { icon: <Globe className="h-5 w-5" />, label: "Website Resmi", value: "cabdinmalang.dkp.jatimprov.go.id" },
 ];
 
 export default function KontakPage() {
