@@ -2,11 +2,40 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   plugins: [
     react(),
     runtimeErrorOverlay(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.png", "logo.png"],
+      manifest: {
+        name: "Putik Cemerlang - Cabdin DKP Malang",
+        short_name: "Putik Cemerlang",
+        description: "Aplikasi resmi Cabang Dinas Kelautan dan Perikanan Kabupaten Malang",
+        start_url: "/",
+        display: "standalone",
+        background_color: "#f0f4fa",
+        theme_color: "#001e40",
+        icons: [
+          { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+        ],
+      },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MiB
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*convex\.cloud\/.*/i,
+            handler: "NetworkFirst",
+            options: { cacheName: "convex-api", networkTimeoutSeconds: 10 },
+          },
+        ],
+      },
+    }),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
