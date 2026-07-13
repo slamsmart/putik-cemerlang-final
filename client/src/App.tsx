@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { isAuthenticated } from "@/lib/auth";
 import { useVisitorTracker } from "@/hooks/useVisitorTracker";
+import PWAInstallBanner from "@/components/PWAInstallBanner";
 
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/LoginPage";
@@ -81,6 +82,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <PWAInstallBanner />
         </TooltipProvider>
       </QueryClientProvider>
     </ConvexProvider>
