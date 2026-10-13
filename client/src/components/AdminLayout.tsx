@@ -121,7 +121,7 @@ function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               Admin Portal - Malang
             </p>
             {/* Close button for mobile */}
-            <button onClick={onClose} className="lg:hidden absolute top-4 right-0 p-1 text-slate-500 hover:text-slate-800">
+            <button onClick={onClose} aria-label="Tutup menu" className="lg:hidden absolute top-4 right-0 rounded-md p-1 text-white hover:bg-white/10 hover:text-white transition-colors">
               <X className="w-5 h-5" />
             </button>
           </header>

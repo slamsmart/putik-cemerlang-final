@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { useQuery as useConvexQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { TrendingUp } from "lucide-react";
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
 
 const quickLinks = [
   { label: "Kelola Buku Tamu", href: "/admin/buku-tamu", icon: "/figmaAssets/container-3.svg" },
@@ -31,6 +35,17 @@ export default function DashboardPage() {
   const pengaduanData = useConvexQuery(api.pengaduanMasyarakat.list) || [];
   const wbsData = useConvexQuery(api.whistleBlowing.list) || [];
   const visitorStats = useConvexQuery(api.visitorStats.stats, { days: 30 });
+  const quarterlyReport = useConvexQuery(api.visitorStats.quarterlyReport, { year: 2026 });
+
+  const quarterChartData = useMemo(
+    () =>
+      quarterlyReport?.quarters.map((quarter) => ({
+        name: quarter.quarter,
+        Pengunjung: quarter.totalVisitors,
+        Kumulatif: quarter.cumulative,
+      })) ?? [],
+    [quarterlyReport],
+  );
 
   const now = new Date();
 
@@ -145,6 +160,77 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Tren Pengunjung Per Triwulan 2026 */}
+      <Card className="mb-8 rounded-xl border border-[#c3c6d1] bg-white shadow-[0px_1px_2px_#0000000d]">
+        <CardContent className="p-6">
+          <div className="mb-4 flex flex-col gap-1">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-[#001e40] [font-family:'Public_Sans',Helvetica]">
+              <TrendingUp className="h-5 w-5 text-emerald-500" />
+              Tren Pengunjung Per Triwulan {quarterlyReport?.year ?? 2026}
+            </h2>
+            <p className="text-sm text-[#5f5e5e] [font-family:'Inter',Helvetica]">
+              Grafik kumulatif naik per triwulan. Angka diturunkan dari total pengunjung terkini
+              dan dipakai untuk laporan simulasi.
+            </p>
+          </div>
+
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={quarterChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="dashKumulatif" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#64748b" }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#64748b" }} />
+                <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0" }} />
+                <Area
+                  type="monotone"
+                  dataKey="Kumulatif"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#dashKumulatif)"
+                  activeDot={{ r: 6, fill: "#10b981", stroke: "#fff", strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {quarterlyReport?.quarters.length ? (
+              quarterlyReport.quarters.map((quarter) => (
+                <div key={quarter.quarter} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div className="text-xs font-bold uppercase tracking-wider text-[#3a5f94]">
+                    {quarter.quarter}
+                  </div>
+                  <div className="mt-1 text-2xl font-bold text-[#001e40] [font-family:'Public_Sans',Helvetica]">
+                    {quarter.totalVisitors.toLocaleString("id-ID")}
+                  </div>
+                  <div className="mt-0.5 text-xs text-[#5f5e5e]">{quarter.period}</div>
+                  <div className="mt-2 text-xs font-semibold text-emerald-700">
+                    Kumulatif {quarter.cumulative.toLocaleString("id-ID")}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-slate-400">Data triwulan belum tersedia.</p>
+            )}
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={() => setLocation("/admin/statistik-pengunjung")}
+            className="mt-5 rounded-lg border-[#c3c6d1] text-[#001e40] hover:bg-slate-50"
+          >
+            Lihat Rincian &amp; Export PDF
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-12 gap-6">
         {/* Recent Activity */}

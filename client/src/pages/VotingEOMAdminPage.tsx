@@ -85,9 +85,9 @@ function CandidateCard({ candidate, onDelete, onUpdate, dragControls }: Candidat
         </div>
       </div>
       {/* Photo preview */}
-      <div className="relative h-40 w-full sm:w-36 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+      <div className="relative h-40 w-full sm:w-36 shrink-0 overflow-hidden rounded-xl bg-white border border-slate-100">
         {imageUrl ? (
-          <img src={imageUrl} alt={nama} className="h-full w-full object-cover" />
+          <img src={imageUrl} alt={nama} className="h-full w-full object-contain" />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center text-slate-300">
             <ImagePlus className="w-10 h-10 mb-1" />

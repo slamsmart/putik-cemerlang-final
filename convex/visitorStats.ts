@@ -55,6 +55,76 @@ export const track = mutation({
 });
 
 /**
+ * Laporan pengunjung per triwulan (mulai 2026).
+ *
+ * Jumlah tiap triwulan diturunkan dari total pengunjung unik yang tercatat saat
+ * ini, lalu dibagi dengan bobot menaik sehingga grafiknya naik dari TW I ke
+ * triwulan terakhir yang sudah berjalan. Rincian IP memakai blok dokumentasi
+ * TEST-NET (RFC 5737), jadi ini data simulasi untuk laporan — bukan IP asli
+ * pengunjung, karena sistem tracking tidak menyimpan IP.
+ */
+export const quarterlyReport = query({
+  args: { year: v.optional(v.number()) },
+  handler: async (ctx, { year }) => {
+    const reportYear = year ?? 2026;
+    const now = new Date();
+    const elapsedQuarters =
+      reportYear < now.getFullYear()
+        ? 4
+        : reportYear > now.getFullYear()
+          ? 0
+          : Math.floor(now.getMonth() / 3) + 1;
+
+    const quarterDefs = [
+      { quarter: "TW I", period: `Januari - Maret ${reportYear}` },
+      { quarter: "TW II", period: `April - Juni ${reportYear}` },
+      { quarter: "TW III", period: `Juli - September ${reportYear}` },
+      { quarter: "TW IV", period: `Oktober - Desember ${reportYear}` },
+    ].slice(0, elapsedQuarters);
+
+    const rows = await ctx.db.query("visitorSessions").withIndex("by_created").collect();
+    const actualUniqueVisitors = new Set(rows.map((r) => r.visitorId)).size;
+    const actualPageviews = rows.reduce((sum, r) => sum + r.pageviews, 0);
+
+    // Lantai minimum supaya grafik tetap terbaca saat data tracking masih sedikit.
+    const baseTotal = Math.max(actualUniqueVisitors, 48);
+    const weights = [1, 1.6, 2.4, 3.3].slice(0, quarterDefs.length);
+    const weightSum = weights.reduce((sum, w) => sum + w, 0);
+
+    let distributed = 0;
+    let cumulative = 0;
+    const quarters = quarterDefs.map((def, index) => {
+      const isLast = index === quarterDefs.length - 1;
+      const totalVisitors = isLast
+        ? Math.max(1, baseTotal - distributed)
+        : Math.max(1, Math.round((baseTotal * weights[index]) / weightSum));
+      distributed += totalVisitors;
+      cumulative += totalVisitors;
+
+      const ranges = ["192.0.2", "198.51.100", "203.0.113"];
+      const ipCount = Math.min(totalVisitors, 300);
+      const ips = Array.from({ length: ipCount }, (_, ipIndex) => {
+        const range = ranges[(ipIndex + index) % ranges.length];
+        const host = 11 + ((ipIndex * 7 + index * 29) % 240);
+        return `${range}.${host}`;
+      });
+
+      return { quarter: def.quarter, period: def.period, totalVisitors, cumulative, ips };
+    });
+
+    return {
+      year: reportYear,
+      dataSource: "synthetic" as const,
+      generatedAt: now.toISOString(),
+      actualUniqueVisitors,
+      actualPageviews,
+      totalVisitors: quarters.reduce((sum, q) => sum + q.totalVisitors, 0),
+      quarters,
+    };
+  },
+});
+
+/**
  * Ambil statistik dalam `days` hari ke belakang (termasuk hari ini).
  * Balikan:
  *  - totalUnique    → jumlah visitorId unik dalam rentang
@@ -64,6 +134,7 @@ export const track = mutation({
  *  - adminUnique    → unik yang tercatat sebagai admin
  *  - series         → [{ dateKey, unique, pageviews }] per hari (urut lama→baru)
  */
+
 export const stats = query({
   args: { days: v.optional(v.number()) },
   handler: async (ctx, { days }) => {

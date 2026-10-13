@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery as useConvexQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -67,6 +67,19 @@ export default function LandingPage() {
     return sortedData;
   }, [guestbookData]);
 
+  useEffect(() => {
+    const revealItems = document.querySelectorAll<HTMLElement>(".scroll-reveal");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => entry.target.classList.toggle("is-visible", entry.isIntersecting));
+      },
+      { threshold: 0.14, rootMargin: "0px 0px -8% 0px" },
+    );
+
+    revealItems.forEach((item) => observer.observe(item));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="bg-[#f7f9fb] text-[#191c1e] font-['Inter',Helvetica] min-h-screen">
       {/* ── Navigation ───────────────────────────────────── */}
@@ -74,13 +87,12 @@ export default function LandingPage() {
 
       <main>
         {/* ── Hero Slider (Retained Function) ───────────────────────────────────── */}
-        <div className="pt-20">
+        <div className="pt-20 scroll-reveal is-visible">
           <HeroSlider />
         </div>
 
-
         {/* ── Capaian & Jangkauan Layanan (Dynamic Convex Stats) ──────────────────── */}
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-white scroll-reveal">
           <div className="max-w-[1280px] mx-auto px-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
               <div className="space-y-2">
@@ -133,7 +145,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Buku Tamu Stats Section (Recharts & Table) ───────────────────────────────────── */}
-        <section className="py-20 bg-[#f2f4f6] overflow-hidden">
+        <section className="py-20 bg-[#f2f4f6] overflow-hidden scroll-reveal">
           <div className="max-w-[1280px] mx-auto px-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
               <div>
@@ -214,7 +226,7 @@ export default function LandingPage() {
       </main>
 
       {/* ── Footer ───────────────────────────────────────── */}
-      <footer className="bg-slate-950 border-t border-white/10 relative overflow-hidden">
+      <footer className="bg-slate-950 border-t border-white/10 relative overflow-hidden scroll-reveal">
         {/* Submerged Wave Background Decor */}
         <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
           <svg className="w-full h-full" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">

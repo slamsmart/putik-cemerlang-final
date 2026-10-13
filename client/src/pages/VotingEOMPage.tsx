@@ -10,6 +10,7 @@ import {
   Award, Vote, CalendarDays, Users, ShieldCheck, Trophy, Medal, Star, Globe, Mail, Phone, CheckCircle2, Lock, LogOut
 } from "lucide-react";
 
+const GOOGLE_CLIENT_CONFIGURED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 type GoogleUser = { sub: string; email: string; name: string; picture?: string };
 
 export default function VotingEOMPage() {
@@ -25,27 +26,28 @@ export default function VotingEOMPage() {
   const [selectedCandidate, setSelectedCandidate] = useState<{ id: Id<"eomCandidates">; nama: string } | null>(null);
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
-
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (response) => {
-      setGoogleLoading(true);
-      try {
-        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${response.access_token}` },
-        });
-        const info = await res.json();
-        setGoogleUser({ sub: info.sub, email: info.email, name: info.name, picture: info.picture });
-      } catch {
-        toast({ title: "Gagal mengambil info akun Google", variant: "destructive" });
-      } finally {
-        setGoogleLoading(false);
-      }
-    },
-    onError: () => {
-      toast({ title: "Login Google dibatalkan atau gagal", variant: "destructive" });
-      setGoogleLoading(false);
-    },
-  });
+  const googleLogin = GOOGLE_CLIENT_CONFIGURED
+    ? useGoogleLogin({
+        onSuccess: async (response) => {
+          setGoogleLoading(true);
+          try {
+            const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+              headers: { Authorization: `Bearer ${response.access_token}` },
+            });
+            const info = await res.json();
+            setGoogleUser({ sub: info.sub, email: info.email, name: info.name, picture: info.picture });
+          } catch {
+            toast({ title: "Gagal mengambil info akun Google", variant: "destructive" });
+          } finally {
+            setGoogleLoading(false);
+          }
+        },
+        onError: () => {
+          toast({ title: "Login Google dibatalkan atau gagal", variant: "destructive" });
+          setGoogleLoading(false);
+        },
+      })
+    : () => toast({ title: "Login Google belum dikonfigurasi", description: "Tambahkan VITE_GOOGLE_CLIENT_ID untuk mengaktifkan voting." });
 
   const handleGoogleLogout = () => {
     googleLogout();
