@@ -1,19 +1,20 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import PublicNavbar from "@/components/PublicNavbar";
-import CeeForm, { CEE_AKSES_KEY } from "@/components/cee/CeeForm";
+import CeeForm from "@/components/cee/CeeForm";
 import CeeRekap from "@/components/cee/CeeRekap";
+import { getDeviceId } from "@/lib/ceeDevice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClipboardList, Lock, Table2 } from "lucide-react";
 
 export default function CeePage() {
   const [tab, setTab] = useState("kuesioner");
-  const [unlocked, setUnlocked] = useState(() => {
-    try {
-      return sessionStorage.getItem(CEE_AKSES_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
+  const deviceId = useMemo(getDeviceId, []);
+  // Status akses di Convex, realtime (bukan sessionStorage): unlock di satu
+  // tab perangkat langsung membuka tab lainnya dan tab Rekapitulasi.
+  const access = useQuery(api.cee.accessStatus, { deviceId });
+  const unlocked = access?.unlocked === true;
 
   return (
     <div className="min-h-screen bg-[#f7f9fb] font-['Inter',Helvetica] text-[#191c1e]">
@@ -56,7 +57,7 @@ export default function CeePage() {
             </TabsList>
 
             <TabsContent value="kuesioner" className="mt-0">
-              <CeeForm onUnlock={() => setUnlocked(true)} />
+              <CeeForm />
             </TabsContent>
 
             <TabsContent value="rekap" className="mt-0">

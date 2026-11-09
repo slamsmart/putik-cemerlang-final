@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { CEE_GROUPS, CEE_ITEMS, CEE_POSISI } from "@shared/cee";
+import { getDeviceId } from "@/lib/ceeDevice";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,31 +15,17 @@ type Answers = Record<number, number>;
 
 const TOTAL_BUTIR = CEE_ITEMS.length;
 
-/**
- * Penanda sesi bahwa gerbang akses CEE sudah dibuka. Kata sandinya sendiri
- * diverifikasi server (`api.cee.verifyAccess`) sehingga tidak ada literal sandi
- * di dalam bundle browser.
- */
-export const CEE_AKSES_KEY = "cee-unlocked";
-
-type Props = {
-  /** Dipanggil setelah kata sandi akses kuesioner berhasil dibuka. */
-  onUnlock?: () => void;
-};
-
-export default function CeeForm({ onUnlock }: Props = {}) {
+export default function CeeForm() {
   const { toast } = useToast();
+  const deviceId = useMemo(getDeviceId, []);
   const nextKode = useQuery(api.cee.nextKode);
   const submit = useMutation(api.cee.submit);
-  const verifyAccess = useMutation(api.cee.verifyAccess);
+  const unlockAccess = useMutation(api.cee.unlockAccess);
+  // State akses hidup di Convex & realtime: ganti di tab lain / oleh admin
+  // langsung tersinkron ke sini (tidak ada lagi sessionStorage).
+  const access = useQuery(api.cee.accessStatus, { deviceId });
+  const unlocked = access?.unlocked === true;
 
-  const [unlocked, setUnlocked] = useState(() => {
-    try {
-      return sessionStorage.getItem(CEE_AKSES_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -53,7 +40,7 @@ export default function CeeForm({ onUnlock }: Props = {}) {
     event.preventDefault();
     setChecking(true);
     try {
-      const cocok = await verifyAccess({ password });
+      const cocok = await unlockAccess({ deviceId, password });
       if (!cocok) {
         toast({
           variant: "destructive",
@@ -63,14 +50,8 @@ export default function CeeForm({ onUnlock }: Props = {}) {
         setPassword("");
         return;
       }
-      try {
-        sessionStorage.setItem(CEE_AKSES_KEY, "1");
-      } catch {
-        /* abaikan bila storage tidak tersedia */
-      }
-      setUnlocked(true);
       setPassword("");
-      onUnlock?.();
+      toast({ title: "Akses dibuka", description: "Form kuesioner kini dapat diisi." });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -85,7 +66,14 @@ export default function CeeForm({ onUnlock }: Props = {}) {
   const terjawab = useMemo(() => Object.keys(answers).length, [answers]);
   const lengkap = terjawab === TOTAL_BUTIR;
 
-  // ── Gerbang akses: form tetap terkunci sampai password benar ───────────────
+  // ── Gerbang akses: form tetap terkunci sampai status Convex unlocked ───────
+  if (access === undefined) {
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-16 text-sm text-slate-500">
+        <Loader2 className="h-4 w-4 animate-spin" /> Memeriksa status akses…
+      </div>
+    );
+  }
   if (!unlocked) {
     return (
       <div className="mx-auto max-w-md rounded-2xl border border-[#c3c6d1] bg-white p-8 shadow-sm">

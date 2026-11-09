@@ -164,18 +164,70 @@ export const seedDummy = mutation({
 });
 
 /**
- * Verifikasi kata sandi akses kuesioner CEE. Kata sandi disimpan pada tabel
- * `settings` (key `cee_access_password`) sehingga tidak ada literal sandi di
- * dalam bundle browser; sandi bawaan hanya berlaku bila kunci belum diisi.
+ * Status akses kuesioner CEE untuk satu perangkat. `unlocked=true` berarti
+ * perangkat ini sudah membuka akses. Query ini realtime: ganti dari tab lain
+ * atau oleh admin langsung tersinkron ke semua tab perangkat tersebut.
  */
-export const verifyAccess = mutation({
-  args: { password: v.string() },
+export const accessStatus = query({
+  args: { deviceId: v.string() },
+  returns: v.object({ unlocked: v.boolean() }),
+  handler: async (ctx, { deviceId }) => {
+    const session = await ctx.db
+      .query("ceeAccess")
+      .withIndex("by_deviceId", (q) => q.eq("deviceId", deviceId))
+      .first();
+    return { unlocked: session?.unlocked === true };
+  },
+});
+
+/**
+ * Buka akses kuesioner untuk perangkat ini. Kata sandi diverifikasi di server
+ * (tabel `settings`, key `cee_access_password`) sehingga tidak ada literal
+ * sandi di dalam bundle browser; sandi bawaan hanya berlaku bila kunci belum
+ * diisi. Status `unlocked` disimpan di Convex dan langsung tersinkron realtime.
+ */
+export const unlockAccess = mutation({
+  args: { deviceId: v.string(), password: v.string() },
   returns: v.boolean(),
-  handler: async (ctx, { password }) => {
+  handler: async (ctx, { deviceId, password }) => {
     const setting = await ctx.db
       .query("settings")
       .withIndex("by_key", (q) => q.eq("key", KUNCI_SANDI_AKSES))
       .first();
-    return password === (setting?.value ?? SANDI_AKSES_BAWAAN);
+    const cocok = password === (setting?.value ?? SANDI_AKSES_BAWAAN);
+    if (!cocok) return false;
+
+    const existing = await ctx.db
+      .query("ceeAccess")
+      .withIndex("by_deviceId", (q) => q.eq("deviceId", deviceId))
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, { unlocked: true, unlockedAt: Date.now() });
+    } else {
+      await ctx.db.insert("ceeAccess", {
+        deviceId,
+        unlocked: true,
+        unlockedAt: Date.now(),
+        createdAt: Date.now(),
+      });
+    }
+    return true;
+  },
+});
+
+/**
+ * Kunci akses kuesioner untuk perangkat ini (upsert status = false).
+ * Dipakai admin untuk mencabut akses, atau perangkat untuk keluar (logout).
+ */
+export const lockAccess = mutation({
+  args: { deviceId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { deviceId }) => {
+    const existing = await ctx.db
+      .query("ceeAccess")
+      .withIndex("by_deviceId", (q) => q.eq("deviceId", deviceId))
+      .first();
+    if (existing) await ctx.db.patch(existing._id, { unlocked: false });
+    return null;
   },
 });

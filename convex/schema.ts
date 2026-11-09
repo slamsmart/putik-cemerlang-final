@@ -152,6 +152,16 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_kode", ["kode"]).index("by_created", ["createdAt"]),
 
+  // Akses kuesioner CEE per perangkat. State akses (buka/kunci) hidup di sini
+  // supaya sinkron realtime (semua tab perangkat sama, admin bisa kunci live).
+  // `deviceId` = token id acak per perangkat; hanya identitas, bukan data sensitif.
+  ceeAccess: defineTable({
+    deviceId: v.string(),
+    unlocked: v.boolean(),
+    unlockedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  }).index("by_deviceId", ["deviceId"]),
+
   // ── Visitor Tracking ────────────────────────────────────────────────────────
   // Satu record per visitorId per hari (YYYY-MM-DD). Increment `pageviews`
   // setiap kali visitor membuka halaman. Kombinasi visitorId + dateKey unik.
