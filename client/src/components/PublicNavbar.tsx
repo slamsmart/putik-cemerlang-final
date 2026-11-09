@@ -72,7 +72,7 @@ export default function PublicNavbar() {
           </div>
         </Link>
 
-        <div className="hidden md:flex items-center space-x-8">
+        <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
           <Link href="/">
             <a className={`${linkBase} ${isActive("/") ? activeCls : inactiveCls}`}>
               Beranda
@@ -215,14 +215,14 @@ export default function PublicNavbar() {
         <button
           aria-label="Buka menu navigasi"
           onClick={() => setMobileOpen(true)}
-          className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#003366] shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#003366]/20"
+          className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#003366] shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#003366]/20"
         >
           <Menu className="h-5 w-5" />
         </button>
       </nav>
     </header>
       {mobileOpen && (
-        <div className="fixed inset-0 z-[80] md:hidden">
+        <div className="fixed inset-0 z-[80] lg:hidden">
           <button
             aria-label="Tutup menu"
             onClick={closeMobile}
