@@ -1,0 +1,157 @@
+{
+  "kode": "R3",
+  "posisi": "Pejabat Fungsional Umum/Staf",
+  "nama": "Responden Dummy 3",
+  "narasi": "Data contoh untuk uji tampilan rekapitulasi CEE.",
+  "tahun": 2026,
+  "answers": [
+    {
+      "itemId": 1,
+      "value": 4
+    },
+    {
+      "itemId": 2,
+      "value": 3
+    },
+    {
+      "itemId": 3,
+      "value": 4
+    },
+    {
+      "itemId": 4,
+      "value": 3
+    },
+    {
+      "itemId": 5,
+      "value": 3
+    },
+    {
+      "itemId": 6,
+      "value": 3
+    },
+    {
+      "itemId": 7,
+      "value": 3
+    },
+    {
+      "itemId": 8,
+      "value": 3
+    },
+    {
+      "itemId": 9,
+      "value": 3
+    },
+    {
+      "itemId": 10,
+      "value": 4
+    },
+    {
+      "itemId": 11,
+      "value": 3
+    },
+    {
+      "itemId": 12,
+      "value": 4
+    },
+    {
+      "itemId": 13,
+      "value": 3
+    },
+    {
+      "itemId": 14,
+      "value": 4
+    },
+    {
+      "itemId": 15,
+      "value": 3
+    },
+    {
+      "itemId": 16,
+      "value": 3
+    },
+    {
+      "itemId": 17,
+      "value": 3
+    },
+    {
+      "itemId": 18,
+      "value": 4
+    },
+    {
+      "itemId": 19,
+      "value": 2
+    },
+    {
+      "itemId": 20,
+      "value": 3
+    },
+    {
+      "itemId": 21,
+      "value": 4
+    },
+    {
+      "itemId": 22,
+      "value": 3
+    },
+    {
+      "itemId": 23,
+      "value": 3
+    },
+    {
+      "itemId": 24,
+      "value": 4
+    },
+    {
+      "itemId": 25,
+      "value": 4
+    },
+    {
+      "itemId": 26,
+      "value": 4
+    },
+    {
+      "itemId": 27,
+      "value": 3
+    },
+    {
+      "itemId": 28,
+      "value": 3
+    },
+    {
+      "itemId": 29,
+      "value": 4
+    },
+    {
+      "itemId": 30,
+      "value": 4
+    },
+    {
+      "itemId": 31,
+      "value": 3
+    },
+    {
+      "itemId": 32,
+      "value": 3
+    },
+    {
+      "itemId": 33,
+      "value": 3
+    },
+    {
+      "itemId": 34,
+      "value": 3
+    },
+    {
+      "itemId": 35,
+      "value": 3
+    },
+    {
+      "itemId": 36,
+      "value": 4
+    },
+    {
+      "itemId": 37,
+      "value": 3
+    }
+  ]
+}

@@ -1,7 +1,10 @@
-const CONVEX_URL = process.env.CONVEX_URL || "https://fabulous-lemur-912.convex.cloud";
+const FALLBACK_CONVEX_URL = "https://fabulous-lemur-912.convex.cloud";
 
+// CONVEX_URL dibaca saat request, bukan saat import: dotenv.config() di server/index.ts
+// berjalan setelah ESM import dievaluasi, jadi module-scope read selalu kosong.
 export async function convexQuery(path: string, args: Record<string, unknown> = {}) {
-  const res = await fetch(`${CONVEX_URL}/api/query`, {
+  const convexUrl = (process.env.CONVEX_URL || "").trim() || FALLBACK_CONVEX_URL;
+  const res = await fetch(`${convexUrl}/api/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ path, args }),
@@ -13,7 +16,8 @@ export async function convexQuery(path: string, args: Record<string, unknown> = 
 }
 
 export async function convexMutation(path: string, args: Record<string, unknown> = {}) {
-  const res = await fetch(`${CONVEX_URL}/api/mutation`, {
+  const convexUrl = (process.env.CONVEX_URL || "").trim() || FALLBACK_CONVEX_URL;
+  const res = await fetch(`${convexUrl}/api/mutation`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ path, args }),

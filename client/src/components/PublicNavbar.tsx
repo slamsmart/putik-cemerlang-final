@@ -25,23 +25,9 @@ export default function PublicNavbar() {
   const skmEntries = (skmData ?? []).filter((entry) => entry.isActive);
   const skmGroups = groupSkmEntriesByYear(skmEntries);
   const eomHistory = useConvexQuery(api.votingEom.getPeriodeHistory) ?? [];
-  const fallbackWinners = [
-    { periode: "Triwulan I", winner: { nama: "Handy Krisna Ardiansyah", seksi: "", imageUrl: undefined, voteCount: 9 } },
-    { periode: "Triwulan II", winner: { nama: "Maharani Zulian Defi S.Kel.", seksi: "", imageUrl: undefined, voteCount: 10 } },
-  ];
-  const quarterKey = (periode: string) =>
-    periode.match(/(?:triwulan|tw)\s*([ivx]+|\d+)/i)?.[1].toUpperCase() ?? periode;
-  const liveQuarterWinners = eomHistory.filter((item) =>
-    /triwulan|(?:^|\s)tw\s*[ivx\d]+/i.test(item.periode) && item.winner
+  const quarterWinners = eomHistory.filter(
+    (item) => /triwulan|(?:^|\s)tw\s*[ivx\d]+/i.test(item.periode) && item.winner
   );
-  const quarterWinners = [
-    ...fallbackWinners.map((fallback) =>
-      liveQuarterWinners.find((item) => quarterKey(item.periode) === quarterKey(fallback.periode)) ?? fallback
-    ),
-    ...liveQuarterWinners.filter(
-      (item) => !fallbackWinners.some((fallback) => quarterKey(fallback.periode) === quarterKey(item.periode))
-    ),
-  ];
   const [selectedWinner, setSelectedWinner] = useState<(typeof quarterWinners)[number] | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [skmOpen, setSkmOpen] = useState(false);
@@ -121,28 +107,32 @@ export default function PublicNavbar() {
               <DropdownMenuLabel className="px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-[#b8d7f4]">
                 Pemenang Voting EOM
               </DropdownMenuLabel>
-              {quarterWinners.map((item) => (
-                <DropdownMenuItem
-                  key={item.periode}
-                  className="cursor-pointer rounded-lg px-4 py-3 text-white hover:bg-[#0b2a52] hover:text-white focus:bg-[#0b2a52] focus:text-white"
-                  onSelect={() => setSelectedWinner(item)}
-                >
-                  {item.winner?.imageUrl ? (
-                    <img
-                      src={item.winner.imageUrl}
-                      alt={item.winner.nama}
-                      className="mr-3 h-12 w-12 shrink-0 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <Trophy className="mr-3 h-4 w-4 shrink-0 text-[#fb8c00]" />
-                  )}
-                  <span className="min-w-0">
-                    <span className="block text-xs font-bold uppercase tracking-wide text-[#b8d7f4]">{item.periode}</span>
-                    <span className="block truncate text-sm font-semibold">{item.winner?.nama ?? "Belum ada pemenang"}</span>
-                    <span className="block text-xs text-slate-300">{item.winner?.voteCount ?? 0} suara</span>
-                  </span>
-                </DropdownMenuItem>
-              ))}
+              {quarterWinners.length === 0 ? (
+                <p className="px-4 py-3 text-sm text-slate-300">Belum ada data pemenang</p>
+              ) : (
+                quarterWinners.map((item) => (
+                  <DropdownMenuItem
+                    key={item.periode}
+                    className="cursor-pointer rounded-lg px-4 py-3 text-white hover:bg-[#0b2a52] hover:text-white focus:bg-[#0b2a52] focus:text-white"
+                    onSelect={() => setSelectedWinner(item)}
+                  >
+                    {item.winner?.imageUrl ? (
+                      <img
+                        src={item.winner.imageUrl}
+                        alt={item.winner.nama}
+                        className="mr-3 h-12 w-12 shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <Trophy className="mr-3 h-4 w-4 shrink-0 text-[#fb8c00]" />
+                    )}
+                    <span className="min-w-0">
+                      <span className="block text-xs font-bold uppercase tracking-wide text-[#b8d7f4]">{item.periode}</span>
+                      <span className="block truncate text-sm font-semibold">{item.winner?.nama ?? "Belum ada pemenang"}</span>
+                      <span className="block text-xs text-slate-300">{item.winner?.voteCount ?? 0} suara</span>
+                    </span>
+                  </DropdownMenuItem>
+                ))
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -209,6 +199,12 @@ export default function PublicNavbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <Link href="/analisis-cee">
+            <a className={`${linkBase} ${isActive("/analisis-cee") ? activeCls : inactiveCls}`}>
+              Analisis CEE
+            </a>
+          </Link>
+
           <Link href="/kontak">
             <a className={`${linkBase} ${isActive("/kontak") ? activeCls : inactiveCls}`}>
               Kontak
@@ -260,24 +256,28 @@ export default function PublicNavbar() {
                 <CollapsibleContent className="px-2 pb-2">
                   <div className="mt-1 rounded-xl bg-[#0b2a52] p-2">
                     <p className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-[#b8d7f4]">Pemenang Voting EOM</p>
-                    {quarterWinners.map((item) => (
-                      <button
-                        key={item.periode}
-                        onClick={() => { setSelectedWinner(item); closeMobile(); }}
-                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-white/10"
-                      >
-                        {item.winner?.imageUrl ? (
-                          <img src={item.winner.imageUrl} alt={item.winner.nama} className="h-10 w-10 shrink-0 rounded-lg object-cover" />
-                        ) : (
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10"><Trophy className="h-4 w-4 text-[#fb8c00]" /></span>
-                        )}
-                        <span className="min-w-0">
-                          <span className="block text-xs font-bold uppercase tracking-wide text-[#b8d7f4]">{item.periode}</span>
-                          <span className="block truncate text-sm font-semibold text-white">{item.winner?.nama ?? "Belum ada pemenang"}</span>
-                          <span className="block text-xs text-slate-300">{item.winner?.voteCount ?? 0} suara</span>
-                        </span>
-                      </button>
-                    ))}
+                    {quarterWinners.length === 0 ? (
+                      <p className="px-3 py-3 text-sm text-slate-300">Belum ada data pemenang</p>
+                    ) : (
+                      quarterWinners.map((item) => (
+                        <button
+                          key={item.periode}
+                          onClick={() => { setSelectedWinner(item); closeMobile(); }}
+                          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-white/10"
+                        >
+                          {item.winner?.imageUrl ? (
+                            <img src={item.winner.imageUrl} alt={item.winner.nama} className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+                          ) : (
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10"><Trophy className="h-4 w-4 text-[#fb8c00]" /></span>
+                          )}
+                          <span className="min-w-0">
+                            <span className="block text-xs font-bold uppercase tracking-wide text-[#b8d7f4]">{item.periode}</span>
+                            <span className="block truncate text-sm font-semibold text-white">{item.winner?.nama ?? "Belum ada pemenang"}</span>
+                            <span className="block text-xs text-slate-300">{item.winner?.voteCount ?? 0} suara</span>
+                          </span>
+                        </button>
+                      ))
+                    )}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -322,6 +322,7 @@ export default function PublicNavbar() {
                   </div>
                 </CollapsibleContent>
               </Collapsible>
+              <button onClick={() => { setLocation("/analisis-cee"); closeMobile(); }} className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition-colors ${location.startsWith("/analisis-cee") ? "bg-white text-[#001e40]" : "text-white hover:bg-white/10"}`}>Analisis CEE</button>
               <button onClick={() => { setLocation("/kontak"); closeMobile(); }} className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition-colors ${location.startsWith("/kontak") ? "bg-white text-[#001e40]" : "text-white hover:bg-white/10"}`}>Kontak</button>
             </nav>
           </div>

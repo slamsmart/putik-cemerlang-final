@@ -139,6 +139,19 @@ export default defineSchema({
     .index("by_voterId_periode", ["voterId", "periode"])
     .index("by_voterEmail_periode", ["voterEmail", "periode"]),
 
+  // ── Control Environment Evaluation (CEE) ────────────────────────────────────
+  // Satu record per responden kuesioner CEE. `kode` = R1, R2, R3, ... sesuai
+  // urutan pengisian; `answers` berisi 37 butir (itemId 1–37, value 1–4).
+  ceeResponses: defineTable({
+    kode: v.string(),
+    posisi: v.string(),
+    nama: v.optional(v.string()),
+    narasi: v.optional(v.string()),
+    tahun: v.number(),
+    answers: v.array(v.object({ itemId: v.number(), value: v.number() })),
+    createdAt: v.number(),
+  }).index("by_kode", ["kode"]).index("by_created", ["createdAt"]),
+
   // ── Visitor Tracking ────────────────────────────────────────────────────────
   // Satu record per visitorId per hari (YYYY-MM-DD). Increment `pageviews`
   // setiap kali visitor membuka halaman. Kombinasi visitorId + dateKey unik.

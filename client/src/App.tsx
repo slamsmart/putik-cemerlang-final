@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -31,15 +31,15 @@ import VotingEOMPage from "@/pages/VotingEOMPage";
 import VotingEOMAdminPage from "@/pages/VotingEOMAdminPage";
 import SkmPage from "@/pages/SkmPage";
 import SkmAdminPage from "@/pages/SkmAdminPage";
+import CeePage from "@/pages/CeePage";
+import CeeAdminPage from "@/pages/CeeAdminPage";
 
-const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || "https://fabulous-lemur-912.convex.cloud";
+const CONVEX_URL = (import.meta.env.VITE_CONVEX_URL || "").trim() || "https://fabulous-lemur-912.convex.cloud";
 const convex = new ConvexReactClient(CONVEX_URL);
 
 function ProtectedRoute({ component: Component }: { component: () => JSX.Element }) {
-  const [, setLocation] = useLocation();
   if (!isAuthenticated()) {
-    setLocation("/admin/login");
-    return null;
+    return <Redirect to="/admin/login" />;
   }
   return <Component />;
 }
@@ -66,9 +66,11 @@ function Router() {
       <Route path="/kontak" component={KontakPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/skm/:slug" component={SkmPage} />
+      <Route path="/analisis-cee" component={CeePage} />
       <Route path="/voting-eom" component={VotingEOMPage} />
       <Route path="/admin/voting-eom" component={() => <ProtectedRoute component={VotingEOMAdminPage} />} />
       <Route path="/admin/skm" component={() => <ProtectedRoute component={SkmAdminPage} />} />
+      <Route path="/admin/analisis-cee" component={() => <ProtectedRoute component={CeeAdminPage} />} />
       <Route path="/admin/pelaporan-gratifikasi" component={() => <ProtectedRoute component={GratifikasiAdminPage} />} />
       <Route component={NotFound} />
     </Switch>

@@ -60,6 +60,11 @@ const primaryNavItems = [
     icon: "/figmaAssets/container-12.svg",
     href: "/admin/statistik-pengunjung",
   },
+  {
+    label: "Analisis CEE",
+    icon: "/figmaAssets/container-4.svg",
+    href: "/admin/analisis-cee",
+  },
 ];
 
 const secondaryNavItems = [
@@ -68,13 +73,6 @@ const secondaryNavItems = [
     icon: "/figmaAssets/container-8.svg",
     href: "/admin/pengaturan",
   },
-];
-
-const footerLinks = [
-  "Kebijakan Privasi",
-  "Syarat & Ketentuan",
-  "Peta Situs",
-  "Hubungi Kami",
 ];
 
 function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -201,17 +199,6 @@ function AdminFooter() {
             Pusat Informasi Kelautan Cabang Dinas Kelautan dan Perikanan Malang yang menyediakan data dan informasi kelautan untuk mendukung pelayanan publik, memudahkan akses informasi bagi masyarakat dan pemangku kepentingan secara cepat, akurat, dan informatif.
           </p>
         </section>
-        <nav aria-label="Footer navigation" className="w-full md:w-fit">
-          <ul className="grid grid-cols-2 gap-x-6 gap-y-3 md:gap-x-12">
-            {footerLinks.map((link) => (
-              <li key={link}>
-                <button className="[font-family:'Inter',Helvetica] text-sm font-normal text-slate-300 hover:text-white transition-all duration-300 hover:[text-shadow:0_0_8px_rgba(0,166,228,0.6),0_0_16px_rgba(0,166,228,0.3)] text-left">
-                  {link}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
       </div>
       <div className="w-full border-t border-[#ffffff1a] pt-6">
         <p className="[font-family:'Inter',Helvetica] text-xs md:text-sm font-normal text-slate-400">

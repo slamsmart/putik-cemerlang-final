@@ -201,6 +201,22 @@ export async function registerRoutes(httpServer: Server | null, app: Express): P
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ message: "Missing url parameter" });
 
+    // ── SSRF guard: hanya host Cloudinary / Convex yang boleh diproksi ─────────
+    const isAllowedProxyHost = (rawUrl: string): boolean => {
+      try {
+        const parsed = new URL(rawUrl);
+        if (parsed.protocol !== "https:") return false;
+        const host = parsed.hostname.toLowerCase();
+        return (
+          host === "res.cloudinary.com" ||
+          host.endsWith(".cloudinary.com") ||
+          host.endsWith(".convex.cloud")
+        );
+      } catch {
+        return false;
+      }
+    };
+
     try {
       let targetUrl = url;
       const convexStorageMatch = url.match(/^(https:\/\/[^/]+\.convex\.cloud)\/api\/storage\/([^/?#]+)/i);
@@ -222,6 +238,8 @@ export async function registerRoutes(httpServer: Server | null, app: Express): P
           }
         }
       }
+
+      if (!isAllowedProxyHost(targetUrl)) return res.status(400).json({ message: "URL tidak diizinkan" });
 
       const response = await fetch(targetUrl);
       if (!response.ok) {

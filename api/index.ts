@@ -21,7 +21,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // ── Convex Client ─────────────────────────────────────────────────────────────
-const CONVEX_URL = "https://fabulous-lemur-912.convex.cloud";
+// Harus menunjuk deployment yang sama dengan VITE_CONVEX_URL di client (single deployment),
+// supaya API dan React client membaca/menulis database yang sama.
+const CONVEX_URL = (process.env.CONVEX_URL || "").trim() || "https://fabulous-lemur-912.convex.cloud";
 
 async function convexQuery(queryPath: string, args: Record<string, unknown> = {}) {
   const res = await fetch(`${CONVEX_URL}/api/query`, {
@@ -98,18 +100,6 @@ async function getCloudinary() {
   });
   return cloudinary;
 }
-
-// ── Debug (hapus setelah env vars terkonfirmasi) ──────────────────────────────
-app.get("/api/debug-env", (_req: Request, res: Response) => {
-  res.json({
-    cloudinary_name: !!process.env.CLOUDINARY_CLOUD_NAME,
-    cloudinary_key: !!process.env.CLOUDINARY_API_KEY,
-    cloudinary_secret: !!process.env.CLOUDINARY_API_SECRET,
-    convex_url: !!process.env.CONVEX_URL,
-    convex_url_value: CONVEX_URL,
-    node_env: process.env.NODE_ENV,
-  });
-});
 
 // ── Image Upload ──────────────────────────────────────────────────────────────
 app.post("/api/upload", uploadImage.single("image"), async (req: Request, res: Response) => {
@@ -195,6 +185,25 @@ app.get("/api/pdf-proxy", async (req: Request, res: Response) => {
   const url = req.query.url as string;
   if (!url) return res.status(400).json({ message: "Missing url parameter" });
 
+  // ── SSRF guard: hanya host Cloudinary / Convex yang boleh diproksi ─────────
+  const isAllowedProxyHost = (rawUrl: string): boolean => {
+    try {
+      const parsed = new URL(rawUrl);
+      if (parsed.protocol !== "https:") return false;
+      const host = parsed.hostname.toLowerCase();
+      return (
+        host === "res.cloudinary.com" ||
+        host.endsWith(".cloudinary.com") ||
+        host.endsWith(".convex.cloud")
+      );
+    } catch {
+      return false;
+    }
+  };
+  const MAX_PROXY_BYTES = 25 * 1024 * 1024;
+
+  if (!isAllowedProxyHost(url)) return res.status(400).json({ message: "URL tidak diizinkan" });
+
   const isCloudinaryUrl = url.includes("cloudinary.com");
   const convexStorageMatch = url.match(/^(https:\/\/[^/]+\.convex\.cloud)\/api\/storage\/([^/?#]+)/i);
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -215,15 +224,24 @@ app.get("/api/pdf-proxy", async (req: Request, res: Response) => {
 
   // Helper: fetch URL, override content-type to correct MIME, send inline
   const tryFetchAndSend = async (fetchUrl: string): Promise<boolean> => {
+    if (!isAllowedProxyHost(fetchUrl)) return false;
     try {
       const r = await fetch(fetchUrl, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; PutikProxy/1.0)" },
       });
       if (!r.ok) return false;
+      // Batasi ukuran body yang diproksi agar tidak menghabiskan memori fungsi
+      const declaredLength = Number(r.headers.get("content-length") || "0");
+      if (declaredLength > MAX_PROXY_BYTES) {
+        console.warn(`PDF proxy: body terlalu besar (${declaredLength} bytes) untuk ${fetchUrl}`);
+        return false;
+      }
+      const body = Buffer.from(await r.arrayBuffer());
+      if (body.byteLength > MAX_PROXY_BYTES) return false;
       // Force correct content-type — Cloudinary private_download_url returns octet-stream
       res.setHeader("Content-Type", forcedMime);
       res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
-      res.send(Buffer.from(await r.arrayBuffer()));
+      res.send(body);
       return true;
     } catch {
       return false;
@@ -383,8 +401,8 @@ app.put("/api/arsip-surat/:id", async (req: Request, res: Response) => {
       args.status = status || (jenis === "Keluar" ? "Terkirim" : "Terarsip");
     }
     if (status !== undefined) args.status = status;
-    if (pdfUrl !== undefined) args.pdfUrl = pdfUrl || undefined;
-    if (tanggalSurat !== undefined) args.tanggalSurat = tanggalSurat || undefined;
+    if (pdfUrl !== undefined) args.pdfUrl = pdfUrl;
+    if (tanggalSurat !== undefined) args.tanggalSurat = tanggalSurat;
     if (customFields && typeof customFields === "object" && !Array.isArray(customFields)) {
       const cleaned: Record<string, string> = {};
       for (const [k, val] of Object.entries(customFields)) {
@@ -458,14 +476,14 @@ app.get("/api/pengaduan-masyarakat", async (_req: Request, res: Response) => {
 
 app.post("/api/pengaduan-masyarakat", async (req: Request, res: Response) => {
   try {
-    const { nama, email, telepon, judul, isi, lokasi, imageUrl, status } = req.body;
+    const { nama, email, telepon, judul, isi, lokasi, imageUrl } = req.body;
     const args: Record<string, unknown> = {
       nama: nama || "",
       email: email || "",
       telepon: telepon || "",
       judul: judul || "",
       isi: isi || "",
-      status: status || "Baru",
+      status: "Baru",
     };
     if (lokasi && typeof lokasi === "string" && lokasi.trim()) args.lokasi = lokasi.trim();
     if (imageUrl && typeof imageUrl === "string" && imageUrl.trim()) args.imageUrl = imageUrl.trim();
@@ -508,7 +526,7 @@ app.get("/api/whistle-blowing", async (_req: Request, res: Response) => {
 
 app.post("/api/whistle-blowing", async (req: Request, res: Response) => {
   try {
-    const { nama, email, telepon, judul, isi, imageUrl, isAnonymous, status } = req.body;
+    const { nama, email, telepon, judul, isi, imageUrl, isAnonymous } = req.body;
     const args: Record<string, unknown> = {
       nama: nama || "",
       email: email || "",
@@ -516,7 +534,7 @@ app.post("/api/whistle-blowing", async (req: Request, res: Response) => {
       judul: judul || "",
       isi: isi || "",
       isAnonymous: !!isAnonymous,
-      status: status || "Baru",
+      status: "Baru",
     };
     if (imageUrl && typeof imageUrl === "string" && imageUrl.trim()) args.imageUrl = imageUrl.trim();
     console.log("[whistle-blowing] creating with args:", JSON.stringify(args));
@@ -562,7 +580,7 @@ app.post("/api/pelaporan-gratifikasi", async (req: Request, res: Response) => {
       nama, nip, jabatan, unitKerja, telepon, email,
       tanggalPenerimaan, jenisGratifikasi, nilaiGratifikasi,
       pemberGratifikasi, hubunganPemberi, kronologi,
-      imageUrl, isAnonymous, status,
+      imageUrl, isAnonymous,
     } = req.body;
     const args: Record<string, unknown> = {
       nama: nama || "",
@@ -577,7 +595,7 @@ app.post("/api/pelaporan-gratifikasi", async (req: Request, res: Response) => {
       hubunganPemberi: hubunganPemberi || "",
       kronologi: kronologi || "",
       isAnonymous: !!isAnonymous,
-      status: status || "Baru",
+      status: "Baru",
     };
     if (nip && typeof nip === "string" && nip.trim()) args.nip = nip.trim();
     if (imageUrl && typeof imageUrl === "string" && imageUrl.trim()) args.imageUrl = imageUrl.trim();

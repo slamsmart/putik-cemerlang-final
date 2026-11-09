@@ -10,6 +10,7 @@
 
 import type * as arsipCustomColumns from "../arsipCustomColumns.js";
 import type * as arsipSurat from "../arsipSurat.js";
+import type * as cee from "../cee.js";
 import type * as gratifikasi from "../gratifikasi.js";
 import type * as guestbook from "../guestbook.js";
 import type * as pengaduanMasyarakat from "../pengaduanMasyarakat.js";
@@ -30,6 +31,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   arsipCustomColumns: typeof arsipCustomColumns;
   arsipSurat: typeof arsipSurat;
+  cee: typeof cee;
   gratifikasi: typeof gratifikasi;
   guestbook: typeof guestbook;
   pengaduanMasyarakat: typeof pengaduanMasyarakat;

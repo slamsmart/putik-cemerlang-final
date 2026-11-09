@@ -47,8 +47,6 @@ export default function DashboardPage() {
     [quarterlyReport],
   );
 
-  const now = new Date();
-
   const { suratMasukTotal, suratKeluarTotal, totalSurat, bukuTamuTotal, pengaduanBaru, wbsBaru } = useMemo(() => {
     let masuk = 0;
     let keluar = 0;
@@ -67,13 +65,14 @@ export default function DashboardPage() {
   }, [arsipData, guestbookData, pengaduanData, wbsData]);
 
   const recentActivities = useMemo(() => {
-    const items: { type: string; desc: string; time: string; status: string }[] = [];
+    const items: { type: string; desc: string; time: string; status: string; timestamp: number }[] = [];
     for (const g of guestbookData.slice(0, 3)) {
       items.push({
         type: "Buku Tamu",
         desc: `Entri baru dari ${g.nama} - ${g.pekerjaan || "Pengunjung"}`,
         time: g.tanggal || "-",
         status: "Baru",
+        timestamp: g._creationTime,
       });
     }
     for (const s of arsipData.slice(0, 2)) {
@@ -82,6 +81,7 @@ export default function DashboardPage() {
         desc: `Surat ${s.jenis.toLowerCase()} No. ${s.nomor} — ${s.perihal}`,
         time: new Date(s.tanggal).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
         status: s.status === "Terarsip" ? "Diarsipkan" : s.status === "Terkirim" ? "Diterbitkan" : "Baru",
+        timestamp: s.createdAt,
       });
     }
     for (const p of pengaduanData.slice(0, 2)) {
@@ -90,6 +90,7 @@ export default function DashboardPage() {
         desc: `Pengaduan dari ${p.nama}: ${p.judul}`,
         time: new Date(p.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
         status: p.status === "Baru" ? "Baru" : p.status === "Diproses" ? "Diproses" : "Selesai",
+        timestamp: p.createdAt,
       });
     }
     for (const w of wbsData.slice(0, 2)) {
@@ -98,13 +99,11 @@ export default function DashboardPage() {
         desc: `Laporan WBS: ${w.judul}${w.isAnonymous ? " (Anonim)" : ""}`,
         time: new Date(w.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
         status: w.status === "Baru" ? "Baru" : w.status === "Diproses" ? "Diproses" : "Selesai",
+        timestamp: w.createdAt,
       });
     }
-    return items.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5);
+    return items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
   }, [guestbookData, arsipData, pengaduanData, wbsData]);
-
-  const bulanLabel = now.toLocaleString("id-ID", { month: "long" });
-  void bulanLabel;
 
   const statsCards = [
     { label: "Pengunjung 30 Hari", value: (visitorStats?.totalUnique ?? 0).toLocaleString(), change: `${visitorStats?.todayUnique ?? 0} hari ini`, icon: "👥", color: "bg-sky-50 text-sky-800" },
